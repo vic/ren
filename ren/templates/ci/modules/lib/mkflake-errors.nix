@@ -42,5 +42,30 @@ in
       expectedError.type = "ThrownError";
       expectedError.msg = "emits channel `note` outside its `at`";
     };
+    # branches are disjoint (fleet.md:94): two branches matching one scope is refused
+    test-overlapping-branches = {
+      expr =
+        (ren.mkFlake inputs (
+          { ren, ... }: {
+            imports = [ mini ];
+            ren.classes.out = [
+              {
+                at = ren.kinds.box;
+                into = _: _: { };
+              }
+              {
+                at = ren.kinds.box;
+                into = _: _: { };
+              }
+            ];
+            ren.aspects.o = {
+              at = ren.kinds.box;
+              out = { };
+            };
+          }
+        )).out;
+      expectedError.type = "ThrownError";
+      expectedError.msg = "has 2 contributors";
+    };
   };
 }
