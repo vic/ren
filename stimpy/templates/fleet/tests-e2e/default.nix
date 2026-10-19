@@ -12,7 +12,8 @@ let
   release = hm: (lib.importJSON "${hm}/release.json").release;
   helix = p: p.helix.version;
 in
-{
+import ./class-lib.nix { inherit inputs; }
+// {
   # fleet.md:441: ci builds with stable pkgs inside edge stage
   test-guest-ci-stable-pkgs = {
     expr = toString stage.microvm.vms.ci.pkgs.path;

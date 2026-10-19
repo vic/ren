@@ -10,6 +10,8 @@ ren: {
         renArgs: v:
         # gen-bind binds a content fn, or the fns in a class value's deferredModule `imports`
         if isBare v then bare else (ren.gen.bind.wrap { bindings = renArgs; } v).module;
+      # class content: the class's module system gives `lib`; Ren's never wins there (#20, as Stimpy)
+      classModule = renArgs: asModule (removeAttrs renArgs [ "lib" ]);
       callContent = renArgs: v: if builtins.isFunction v then (asModule renArgs v) { } else v;
       # aspect = { name; content = { key = value; }; }; result = { key = [ scope ids ]; }
       landing =
@@ -64,6 +66,7 @@ ren: {
         mkPools
         landing
         asModule
+        classModule
         ;
     };
 }
