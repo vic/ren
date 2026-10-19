@@ -42,13 +42,11 @@ ren: {
       # nearest ancestor-or-self scope of id that carries x
       isAt =
         ctx: opts: P: x: id:
-        let
-          found = builtins.filter (test ctx opts x) ([ id ] ++ ctx.ancestors id);
-        in
-        if found == [ ] then
-          throw "ren: is: ${x.__id or x.__scope or x.name} has no scope on path of ${id}"
-        else
-          test ctx opts P (builtins.head found);
+        test ctx opts P (
+          ren.gen.prelude.findFirst (test ctx opts x)
+            (throw "ren: is: ${x.__id or x.__scope or x.name} has no scope on path of ${id}")
+            ([ id ] ++ ctx.ancestors id)
+        );
     in
     {
       and = ps: mk "and" ps;

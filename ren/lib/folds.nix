@@ -10,8 +10,8 @@ ren: {
         inherit name apply;
       };
       isPlain = v: builtins.isAttrs v && !(v ? type && v.type == "derivation") && !(v ? _type);
-      # glue: gen-scope folds has no dedup set fold (folds.nix:426)
-      dedup = builtins.foldl' (acc: v: if builtins.elem v acc then acc else acc ++ [ v ]) [ ];
+      # glue: gen-scope folds has no dedup set fold (folds.nix:426); gen-prelude `unique` is it
+      inherit (gen.prelude) unique;
       # glue: gen-scope mergeAttrs is shallow and refuses any shared sub-key; Ren needs recursion + equal leaves.
       conflict =
         c: p: throw "ren: channel `${c}` fold attrs: conflict at `${builtins.concatStringsSep "." p}`";
@@ -42,7 +42,7 @@ ren: {
     in
     {
       list = mk "list" (c: emissions: gen.scope.folds.list c (values emissions));
-      set = mk "set" (_: emissions: dedup (values emissions));
+      set = mk "set" (_: emissions: unique (values emissions));
       attrs = mk "attrs" (c: emissions: mergeAll c (values emissions));
       one = mk "one" (c: emissions: gen.scope.folds.one c (values emissions));
     };
