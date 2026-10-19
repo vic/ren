@@ -4,6 +4,7 @@
   lib,
   settingsT,
   opt,
+  maybe,
   ...
 }:
 let
@@ -21,6 +22,7 @@ in
     channel = ren.kinds.channel;
     system = ren.kinds.system;
     addr = lib.types.str;
+    buildHost = maybe lib.types.str; # null: build on the deployer
     settings = opt settingsT { };
   };
 

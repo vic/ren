@@ -35,7 +35,14 @@ in
     deployment = { host, tags, ... }: {
       address = host.addr;
       user = "deploy";
+      inherit (host) buildHost;
       inherit tags;
+    };
+    generators = { host, ... }: {
+      per-machine.${host.name}.deploy-key.files = [
+        "key"
+        "key.pub"
+      ];
     };
   };
 }

@@ -214,6 +214,14 @@ ren.lib.mkFlake inputs {
       };
     };
 
+    nixosTest = {                                                   # each content key = one VM test (not named `checks`: a class name is a forward key)
+      at   = ren.kinds.system;
+      into = { system, ... }: ms:
+        let tests = (lib.evalModules { modules = ms ++ [ { freeformType = t.attrsOf t.deferredModule; } ]; }).config;
+        in { checks.${system.name} = builtins.mapAttrs (name: m:
+               inputs.nixpkgs.legacyPackages.${system.name}.testers.runNixOSTest { imports = [ m ]; inherit name; }) tests; };
+    };
+
   };
 
   # ══ KINDS — below = child kinds; spawns.<child> = s: instances (gen-scope mkKind, parent side) ══
@@ -238,6 +246,7 @@ ren.lib.mkFlake inputs {
       channel     = ren.kinds.channel;
       system      = ren.kinds.system;
       addr        = t.str;
+      buildHost   = maybe t.str;                                    # null: build on the deployer
       settings    = opt settingsT { };
     };
     host  = { is = ren.kinds.machine;
@@ -280,8 +289,11 @@ ren.lib.mkFlake inputs {
   ren.environment.staging = { grants = [ ren.group.admin ren.group.deploy ]; inherits = ren.environment.prod; };
 
   ren.host.lb     = { environment = ren.environment.prod;    channel = ren.channel.stable; system = ren.system.x86_64-linux; addr = "10.0.1.1";  };
-  ren.host.web-1  = { environment = ren.environment.prod;    channel = ren.channel.stable; system = ren.system.x86_64-linux; addr = "10.0.1.10"; settings.kernel.channel = "latest"; };
-  ren.host.web-2  = { environment = ren.environment.prod;    channel = ren.channel.stable; system = ren.system.x86_64-linux; addr = "10.0.1.11"; };
+  # web-1, web-2 from data: _inventory.json = { "web-1": { "environment": "prod", "channel": "stable", "system": "x86_64-linux",
+  #   "addr": "10.0.1.10", "settings": { "kernel": { "channel": "latest" } } }, "web-2": { …, "addr": "10.0.1.11", "buildHost": "10.0.1.1" } }
+  ren.host = builtins.mapAttrs (_: h: h // { environment = ren.environment.${h.environment};   # names become refs
+                                             channel = ren.channel.${h.channel}; system = ren.system.${h.system}; })
+    (builtins.fromJSON (builtins.readFile ./_inventory.json));
   ren.host.stage  = { environment = ren.environment.staging; channel = ren.channel.edge;   system = ren.system.x86_64-linux; addr = "10.0.2.10"; };
   ren.guest.ci    = { environment = ren.environment.staging; channel = ren.channel.stable; system = ren.system.x86_64-linux; addr = "10.0.2.20"; on = ren.host.stage; };
   ren.mac.studio  = { environment = ren.environment.staging; channel = ren.channel.stable; system = ren.system.aarch64-darwin; addr = "10.0.2.30"; };
@@ -309,6 +321,8 @@ ren.lib.mkFlake inputs {
     flake-inputs = { fold = attrs; to = _: ren.fleet.main;          # no `at`: any scope emits
                      into = { ... }: inputs': { flake-file.inputs = inputs'; }; };
     tags         = { fold = set;   to = e: e; };
+    generators   = { fold = attrs; to = _: ren.fleet.main;          # no `at`: one plan; at a host = per-machine, at the root = shared
+                     into = { ... }: plan: { vars = plan; }; };
 
     # channels with `into`: data collectors (not module systems, so not classes)
     packages     = { fold = attrs; at = ren.kinds.system; to = e: e;
@@ -330,8 +344,13 @@ ren.lib.mkFlake inputs {
     };
     deploy-record = {
       at         = metal;
-      deployment = { host, tags, ... }: { address = host.addr; user = "deploy"; inherit tags; };
+      deployment = { host, tags, ... }: { address = host.addr; user = "deploy"; inherit (host) buildHost; inherit tags; };
+      generators = { host, ... }: { per-machine.${host.name}.deploy-key.files = [ "key" "key.pub" ]; };
     };
+    ca = { at = ren.fleet.main; generators = { ... }: { shared.ca.files = [ "ca.crt" "ca.key" ]; }; };
+    facter = { at = metal;                                          # hardware report only when the file exists
+               nixos = { host, lib, ... }: let report = ./facter/${host.name}.json;
+                 in lib.optionalAttrs (builtins.pathExists report) { hardware.facter.reportPath = report; }; };
 
     hm-module = {                                                   # bundle: each key lands where its class lives
       at     = ren.kinds.machine;
@@ -424,6 +443,11 @@ ren.lib.mkFlake inputs {
     monitoring.nixos = { scrape, ... }: {
       services.prometheus.scrapeConfigs = map (j: { job_name = j.job; static_configs = [ { targets = [ j.target ]; } ]; }) scrape; };
 
+    web-check = { at = ren.system.x86_64-linux;                     # a VM test across two machines
+                  nixosTest.web = { nodes.web = { services.nginx.enable = true; networking.firewall.allowedTCPPorts = [ 80 ]; };
+                                    nodes.client = { };
+                                    testScript = ''start_all(); web.wait_for_unit("nginx"); client.wait_until_succeeds("curl -sf http://web/")''; }; };
+
     # ── activators ──
     lb  = { at = ren.host.lb; includes = [ ren.aspects.haproxy ren.aspects.monitoring ]; };
     web = { at = anyOf [ ren.host.web-1 ren.host.web-2 ren.host.stage ]; includes = [ ren.aspects.nginx ]; };
@@ -475,6 +499,11 @@ ren.lib.mkFlake inputs {
 | `is P x` on the path | stage users' syncthing tray on (desktop active on `parent`) | `is` picking one of alice's other scopes |
 | `anyOf` | — | Ren exporting `any` (gen-select's tombstone; clashes with `lib.any`) |
 | channel `into` | `packages.<sys>.hello` from the `packages` channel; `colmenaHive` and `ageManifest` fed by the nixos class | `tools.packages` evaluated as a module (`deferredModule`) |
+| hosts from JSON (#31) | `host:web-1`, `host:web-2` under prod, read from `_inventory.json`; names looked up as refs (`ren.environment.${name}`) | a string where a ref belongs evaluating (`environment = "prod"` is refused: not an instance of kind environment) |
+| generated values (#28) | one `vars` output: `vars.shared.ca` (declared at `ren.fleet.main`); `vars.per-machine.{lb,web-1,web-2,stage}.deploy-key` (declared by `deploy-record`) | a per-machine entry for ci or studio; values generated at eval (generation is a CLI job) |
+| VM checks (#32) | `checks.x86_64-linux.web`: a `runNixOSTest` with nodes `client`, `web` (evaluated, not run) | a check under `aarch64-linux` or `aarch64-darwin`; a class named `checks` (a class name is a forward key, so it can't also be the output) |
+| `buildHost` (#32) | `deployment.buildHost = "10.0.1.1"` for web-2 (from JSON); `null` for lb, web-1, stage | a `buildHost` record for ci or studio (`deployment` is `at = metal`) |
+| facter (#32) | `facter` active on lb, web-1, web-2, stage | `hardware.facter.reportPath` set on a host with no `./facter/<host>.json` (the template ships none) |
 
 > VIC:
 
