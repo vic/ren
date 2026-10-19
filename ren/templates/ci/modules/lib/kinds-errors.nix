@@ -19,7 +19,7 @@ in
     test-missing-field-msg = {
       expr = (mk { host.x = { }; }).host.x.addr;
       expectedError.type = "ThrownError";
-      expectedError.msg = "missing field `addr`";
+      expectedError.msg = "option `host.x.addr' is used but not defined";
     };
     test-unknown-field = {
       expr = boom (mk {
@@ -53,7 +53,7 @@ in
       expectedError.msg = "used by both kind";
     };
     test-fn-form-fields = {
-      expr = builtins.attrNames kinds.replica.fields;
+      expr = builtins.attrNames kinds.replica.schema.options;
       expected = [
         "db"
         "region"
@@ -62,7 +62,7 @@ in
     test-guard-violated = {
       expr = (replicas "us").replica.r;
       expectedError.type = "ThrownError";
-      expectedError.msg = "instance `replica.r` violates its kind guard";
+      expectedError.msg = "kind `replica` violates its kind guard";
     };
     test-name-with-slash-refused = {
       expr =

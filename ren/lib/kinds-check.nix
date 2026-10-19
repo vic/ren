@@ -1,7 +1,8 @@
-# instance validation for kinds.nix: fields via A2 mergeDefinitions, name uniqueness per is-root family.
+# instances for kinds.nix: one gen-schema registry per kind (fields, strictness, guard, id_hash),
+# plus Ren glue: name uniqueness per is-root family, and the instance mark predicates read.
 ren: {
   kindsCheck =
-    { rootOf, idOf, ... }:
+    { rootOf, ... }:
     {
       mkInstances =
         {
@@ -10,63 +11,42 @@ ren: {
           decls,
         }:
         let
-          idHash = idOf (map (k: rootOf kinds k lib) (builtins.attrNames kinds));
+          registries =
+            (lib.evalModules {
+              modules = [
+                {
+                  options = builtins.mapAttrs (_: k: ren.gen.schema.mkInstanceRegistry { } k.schema) kinds;
+                  # function module: a merged deferredModule (`{ imports; }`) is not read as config shorthand
+                  config = builtins.mapAttrs (
+                    _:
+                    builtins.mapAttrs (
+                      _: m: _:
+                      m
+                    )
+                  ) decls;
+                }
+              ];
+            }).config;
           mkOne =
-            k: n: given:
+            k: n: entry:
             let
-              fields = kinds.${k}.fields;
-              where = "ren: ${k}.${n}";
-              unknown = builtins.attrNames (removeAttrs given (builtins.attrNames fields));
               clash = builtins.filter (
                 k2: k2 != k && decls.${k2} ? ${n} && rootOf kinds k2 lib == rootOf kinds k lib
               ) (builtins.attrNames decls);
-              field =
-                f: fv:
-                let
-                  isOpt = fv._type or null == "option";
-                  type = if isOpt then fv.type else fv;
-                  defs =
-                    if given ? ${f} then
-                      [
-                        {
-                          file = where;
-                          value = given.${f};
-                        }
-                      ]
-                    else if isOpt && fv ? default then
-                      [
-                        {
-                          file = where;
-                          value = fv.default;
-                        }
-                      ]
-                    else
-                      throw "${where}: missing field `${f}`";
-                in
-                (lib.modules.mergeDefinitions [ k n f ] type defs).mergedValue;
-              g = kinds.${k}.guard;
-              inst = {
-                __ren = "instance";
-                kind = k;
-                name = n;
-                __id = "${rootOf kinds k lib}:${n}";
-                id_hash = idHash (rootOf kinds k lib) n;
-                __guard = g;
-              }
-              // builtins.mapAttrs field fields;
             in
             # scope ids are "kind:name/kind:name" (scopes-parent.nix parses them): a name with `/` or `:` cannot exist.
             if builtins.match ".*[/:].*" n != null then
               throw "ren: instance name `${n}` (kind `${k}`) must not contain `/` or `:`"
-            else if unknown != [ ] then
-              throw "${where}: unknown field `${builtins.head unknown}`"
             else if clash != [ ] then
               throw "ren: name `${n}` used by both kind `${k}` and kind `${builtins.head clash}`"
-            else if g != null && !(g.args inst) then
-              throw "ren: instance `${k}.${n}` violates its kind guard"
             else
-              inst;
+              entry
+              // {
+                __ren = "instance";
+                kind = k;
+                __id = "${rootOf kinds k lib}:${n}";
+              };
         in
-        builtins.mapAttrs (k: builtins.mapAttrs (mkOne k)) decls;
+        builtins.mapAttrs (k: builtins.mapAttrs (mkOne k)) (builtins.intersectAttrs decls registries);
     };
 }
