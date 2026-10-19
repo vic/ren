@@ -580,7 +580,7 @@ The table lists only patterns not already in **Den coverage** above.
 | `den.schema.conf`: options on every kind (`ci/…/doc-examples.nix:6`) | a shared `let` field set merged into each kind, or an abstract kind with `is` |
 | enrich context with a flag (`isNixos`) via `policy.resolve` (`ci/…/policy-context-enrichment.nix:8`) | a kind ref (`ren.kinds.host` vs `ren.kinds.mac`) or a `let` predicate |
 | `{ self, ... }` fires once at its registration scope (`ci/…/self-guard.nix:13`) | `at = ren.host.igloo` (instance ref) |
-| noflake entry, npins, with-inputs (`noflake/default.nix:1`) | `ren.lib.mkFlake` is a module set; `evalModules` it without a flake |
+| noflake entry, npins, with-inputs (`noflake/default.nix:1`) | `ren.lib.mkFlake` is a module set; `evalModules` it without a flake; entry points: flakes (`mkFlake inputs module`), no flakes (plain `import` with locked `inputs`), flake-parts (`flakeModules.default`, option `fleet`), plain `lib.evalModules` (`lib.flakeModule`, option `fleet`), Gen modules (Ren only, the same `lib.flakeModule`) |
 | `systems = builtins.attrNames den.hosts` (`fleet-demo/…/flake-parts.nix:4`) | `ren.system` instances |
 | `includeIf` with fallback (`ci/…/fx-includeIf.nix:180`) | `a = { at = and [ K ren.aspects.sops ]; … }; b = { at = and [ K (not ren.aspects.sops) ]; … }` |
 | exclude subtree vs `.global`, `filterBy` (`ci/…/fx-constraints.nix:266-688`) | `excludes` is subtree; global = an `excludes` on an aspect `at = ren.fleet.main`; filterBy = `excludes = lib.filter p (lib.attrValues ren.aspects)` |
