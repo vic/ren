@@ -30,7 +30,8 @@ ren: {
       ctx = P.mkCtx { inherit kinds sc; };
       classes = decl.classes or { };
       channels = decl.channels or { };
-      aspects = ren.pipelineAspects decl;
+      asp = ren.pipelineAspects decl;
+      aspects = asp.all;
       act = A.mkActivation { inherit aspects ctx; };
       test = p: id: P.test ctx { activeAt = act.active; } p id;
       # ruling: a branch with `at` absent/null matches every scope, like a channel's default (fleet-ren.md:102)
@@ -72,9 +73,10 @@ ren: {
       inherit
         kinds
         instances
-        aspects
         test
         ;
+      # world's `ren.aspects`: the declared set only, so a ref never forces inline discovery
+      aspects = asp.declared;
       result = ren.pipelineResult (args // { inherit branchIx receivers o; });
     };
 }
