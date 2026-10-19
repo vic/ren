@@ -89,6 +89,7 @@ stimpy: {
           id:
           map (x: {
             inherit id;
+            n = x.a;
             v = emit x.a id c;
           }) (filter (x: x.k == c && emitsAt c id) (perScope id))
         ) st.order

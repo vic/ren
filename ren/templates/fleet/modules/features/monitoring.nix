@@ -17,6 +17,7 @@ in
 
   ren.channels.scrape = {
     fold = ren.lib.fold.list;
+    type = lib.types.attrsOf lib.types.str; # each emission is checked when emitted
     at = ren.kinds.replica;
     to = _: ren.host.lb;
   };
