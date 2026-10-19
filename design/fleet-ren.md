@@ -6,6 +6,7 @@
 - C3 (L18/L101): gen-select `anyOf` exists at bcbc5ca; local ~/hk/gen checkouts are stale.
 - C4 (L300): `persist` at = `anyOf [ host (and [ user (within host) ]) ]`. `to = e: e.host` needs a host binding; users under mac/phone/home have none (measured: `attribute 'host' missing`).
 - C5 (L427 strata row 3): the per-branch stratum-3 static check (a branch must not read `outputs` it forwards into) is enforced by nix/lib/strata.nix: a static check on the class graph (keys probed per branch); a read of a forwarded-into class's output throws, lazily per key.
+- C6 (#16): a content function with an `@` pattern (`a@{ host, ... }:`) sees only the Ren args it names as formals. gen-bind `wrap` passes declared formals only (README.md:152), as nixpkgs does for `_module.args` (lib/modules.nix:725-755). Name every arg you read.
 
 
 v29.A = genie's fork of vic's v29 (gist `fbc69bfc`). It keeps v29's reduction and fixes the places where a rename to a Gen term inverted or overloaded that term. v29 explores how far the surface can shrink. **The previous version is backed up as `vic/fleet-v28.md`**, and we may revert to it. v29 renames words to Gen's own terms only where Gen means the same thing. It merges words that did the same job, and makes the rest relate to each other. Design only; nothing implements it. Feedback goes after `> VIC:` lines.
