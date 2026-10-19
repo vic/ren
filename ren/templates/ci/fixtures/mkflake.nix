@@ -34,7 +34,8 @@ rec {
         };
         home = {
           at = ren.kinds.person;
-          into = { person, ... }: ms: { sys.users.${person.name} = lib.mkMerge ms; };
+          # class values are modules: hand each to the submodule as a module, not as config
+          into = { person, ... }: ms: { sys.users.${person.name} = lib.mkMerge (map (m: _: m) ms); };
         };
       };
       ren.kinds = {

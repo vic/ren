@@ -46,8 +46,8 @@ ren: {
       # ruling: `ren.<kind>` exists for every declared kind (empty when it has no instances) (fleet-ren.md:95)
       world = p.instances // {
         lib = renLib;
-        inherit (p) kinds aspects;
-        inherit (cfg) classes channels;
+        inherit (p) kinds;
+        inherit (cfg) classes channels aspects; # declared aspects only: a ref never forces inline discovery
       };
     in
     p.result;

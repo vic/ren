@@ -2,14 +2,22 @@
 let
   inherit (import ../../fixtures/mkflake.nix { inherit ren lib; }) inputs;
   # mini fleet: class `sys` at box; aspect `a` includes inline aspects (fleet.md:511,576)
-  mini =
-    inc:
+  mini = miniWith { };
+  # `extra`: a second fleet module (one aspect defined in two files merges)
+  miniWith =
+    extra: inc:
     ren.evalFleet inputs (
       { ren, ... }:
       {
+        imports = [ extra ];
         ren.classes.sys = {
           at = ren.kinds.box;
-          into = _: ms: { got = builtins.foldl' (x: y: x // y) { } ms; };
+          # class values are modules: evaluate them, never read them as data
+          into = _: ms: {
+            got =
+              (lib.evalModules { modules = [ { freeformType = lib.types.lazyAttrsOf lib.types.raw; } ] ++ ms; })
+              .config;
+          };
         };
         ren.kinds = {
           root.below = [ ren.kinds.box ];
@@ -27,6 +35,20 @@ let
 in
 {
   mkflake-inline = {
+    # gen-aspects merge: class content of `ref` from two modules lands together
+    test-aspect-two-modules-merge = {
+      expr = (miniWith { ren.aspects.ref.sys.s = 3; } (ren: [ ren.aspects.ref ])).outputs.got;
+      expected = {
+        r = 1;
+        s = 3;
+      };
+    };
+    # negative control: two modules giving one class option two values is a merge conflict
+    test-aspect-two-modules-conflict = {
+      expr = (miniWith { ren.aspects.ref.sys.r = 2; } (ren: [ ren.aspects.ref ])).outputs.got.r;
+      expectedError.type = "ThrownError";
+      expectedError.msg = "the option `r' has conflicting definitions";
+    };
     test-inline-named-lands = {
       expr =
         (mini (ren: [

@@ -27,16 +27,15 @@ ren: {
           "channel"
         else
           null;
-      # ruling: an unknown key is an error for every aspect (fleet-ren.md:107)
-      unknown = a: k: throw "ren: aspect `${a.name}`: key `${k}` is neither class nor channel";
       # ruling: aspect active nowhere has no scopes to land in, so it is not a landing error (fleet-ren.md:108)
+      # ruling: an unknown key is an error for every aspect (fleet-ren.md:107); `a.content` refuses it (view.nix)
       landed = lib.mapAttrs (
         n: a:
         let
           ids = filter (act.active n) sc.order;
         in
         if ids == [ ] then
-          lib.mapAttrs (k: _: if keyKind k == null then unknown a k else [ ]) a.content
+          lib.mapAttrs (_: _: [ ]) a.content
         else
           C.landing {
             inherit keyKind;

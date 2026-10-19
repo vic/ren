@@ -7,9 +7,8 @@ ren: {
       bare = throw "ren: bare function emission; wrap it in `{ ... }:`";
       asModule =
         renArgs: v:
-        if !builtins.isFunction v then
-          v
-        else if !isContentFn v then
+        # gen-bind binds a content fn, or the fns in a class value's deferredModule `imports`
+        if builtins.isFunction v && !isContentFn v then
           bare
         else
           (ren.gen.bind.wrap { bindings = renArgs; } v).module;
