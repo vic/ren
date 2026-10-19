@@ -44,6 +44,21 @@ in
     nixos.networking.firewall.allowedTCPPorts = [ 80 ];
   };
 
+  # a VM test across two machines: client reaches nginx on web
+  ren.aspects.web-check = {
+    at = ren.system.x86_64-linux;
+    nixosTest.web = {
+      nodes.web.services.nginx.enable = true;
+      nodes.web.networking.firewall.allowedTCPPorts = [ 80 ];
+      nodes.client = { };
+      testScript = ''
+        start_all()
+        web.wait_for_unit("nginx")
+        client.wait_until_succeeds("curl -sf http://web/")
+      '';
+    };
+  };
+
   # activator
   ren.aspects.web = {
     at = anyOf [
