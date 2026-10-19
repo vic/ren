@@ -44,6 +44,7 @@ ren: {
               // {
                 __ren = "instance";
                 kind = k;
+                __kind = kinds.${k}.schema; # gen-select `entity` takes the entry's kind value first
                 __id = "${rootOf kinds k lib}:${n}";
               };
         in

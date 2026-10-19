@@ -1,38 +1,36 @@
 # Shared fixtures for the activation tests (not a test module).
 { ren, lib }:
 rec {
-  inst = kind: name: {
-    __ren = "instance";
-    __id = "${kind}:${name}";
-    inherit kind name;
-  };
-  r = ren.scopes.mkScopes {
-    kinds = {
-      env.below = [ "host" ];
-      host.below = [ "user" ];
+  K = ren.kinds.mkKinds {
+    inherit lib;
+    decls = {
+      env.below = [ K.host ];
+      host.below = [ K.user ];
       user = { };
     };
-    instances = {
-      env.prod = inst "env" "prod";
-      host = {
-        web-1 = inst "host" "web-1";
-        web-2 = inst "host" "web-2";
-        db = inst "host" "db";
+  };
+  r = ren.scopes.mkScopes {
+    kinds = K;
+    instances = ren.kinds.mkInstances {
+      inherit lib;
+      kinds = K;
+      decls = {
+        env.prod = { };
+        host = {
+          web-1 = { };
+          web-2 = { };
+          db = { };
+        };
+        user.alice = { };
       };
-      user.alice = inst "user" "alice";
     };
   };
-  ctx = {
-    data = id: r.scopes.${id};
-    parent = r.parentOf;
-    inherit (r) children ancestors order;
-    siblings = id: lib.remove id (r.children (r.parentOf id));
+  ctx = p.mkCtx {
+    kinds = K;
+    sc = r;
   };
   p = ren.predicates;
-  kind = n: {
-    __ren = "kind";
-    name = n;
-  };
+  kind = n: K.${n};
   asp =
     name: extra:
     {

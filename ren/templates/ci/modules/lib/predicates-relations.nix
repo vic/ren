@@ -5,6 +5,7 @@ let
     inst
     ctx
     t
+    ids
     hostK
     ;
 in
@@ -35,24 +36,24 @@ in
       expected = true;
     };
     test-aspect = {
-      expr = p.test ctx { activeAt = n: id: n == "a" && id == "user"; } {
+      expr = p.test ctx { activeAt = n: id: n == "a" && id == ids.user; } {
         __ren = "aspect";
         name = "a";
-      } "user";
+      } ids.user;
       expected = true;
     };
     test-isAt-nearest = {
-      expr = p.isAt ctx { } hostK (inst "h") "user";
+      expr = p.isAt ctx { } hostK (inst "h") ids.user;
       expected = true;
     };
     test-isAt-missing = {
-      expr = p.isAt ctx { } hostK (inst "zzz") "user";
+      expr = p.isAt ctx { } hostK (inst "zzz") ids.user;
       expectedError.type = "ThrownError";
     };
     test-same = {
       expr = [
-        (p.same (inst "a") (inst "a"))
-        (p.same (inst "a") (inst "b"))
+        (p.same (inst "h") (inst "h"))
+        (p.same (inst "h") (inst "h2"))
       ];
       expected = [
         true

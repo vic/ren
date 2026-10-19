@@ -8,13 +8,6 @@ ren: {
         __ren = "pred";
         inherit op args;
       };
-      ops = {
-        and = s.and;
-        anyOf = s.anyOf;
-        not = s.not;
-        within = s.within;
-        has = s.has;
-      };
       compile =
         {
           activeAt ? (_: _: false),
@@ -22,12 +15,12 @@ ren: {
         p:
         let
           c = compile { inherit activeAt; };
-          kindOf = id: ctx: (ctx.data id).kinds;
         in
+        # a kind ref matches its kind or any `is` descendant; an instance ref is id_hash identity
         if p.__ren == "kind" then
-          s.when (id: ctx: builtins.elem p.name (kindOf id ctx))
+          s.subkind p.schema
         else if p.__ren == "instance" then
-          s.when (id: ctx: (ctx.data id).instance.__id == p.__id)
+          s.entity p.__kind p
         else if p.__ren == "scope" then
           s.when (id: _: id == p.__scope)
         else if p.__ren == "aspect" then
@@ -40,9 +33,9 @@ ren: {
             "anyOf"
           ]
         then
-          ops.${p.op} (map c p.args)
+          s.${p.op} (map c p.args)
         else
-          ops.${p.op} (c p.args);
+          s.${p.op} (c p.args);
       test =
         ctx: opts: p: id:
         s.matches (compile opts p) id ctx;
@@ -50,8 +43,7 @@ ren: {
       isAt =
         ctx: opts: P: x: id:
         let
-          hit = sid: if x.__ren == "scope" then sid == x.__scope else (ctx.data sid).instance.__id == x.__id;
-          found = builtins.filter hit ([ id ] ++ ctx.ancestors id);
+          found = builtins.filter (test ctx opts x) ([ id ] ++ ctx.ancestors id);
         in
         if found == [ ] then
           throw "ren: is: ${x.__id or x.__scope or x.name} has no scope on path of ${id}"
@@ -81,6 +73,22 @@ ren: {
         throw "ren: `is P x` with an instance needs the scope-local `is` from content args ({ is, ... }:)";
       # fleet-ren.md `same a b`: gen-schema id_hash identity (registry entry, kinds-check.nix)
       same = a: b: a.id_hash == b.id_hash;
+      # gen-select's scope adapter: `data` = the Ren scope plus __identity (instance entry, kind value)
+      mkCtx =
+        { kinds, sc }:
+        gen.select.adapters.scope.mkContext {
+          node = id: {
+            parent = sc.parentOf id;
+            scope = sc.scopes.${id};
+            kindValue = kinds.${sc.scopes.${id}.kind}.schema;
+          };
+          get = id: _: ren.genLib.genAttrs (sc.children id) (_: null);
+          project = n: n.scope;
+          entryFor = id: sc.scopes.${id}.instance;
+        }
+        // {
+          inherit (sc) order;
+        };
       inherit compile test isAt;
     };
 }

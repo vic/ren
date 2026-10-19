@@ -1,54 +1,73 @@
 # Shared fixtures for the predicates tests (not a test module).
+# Real kinds, instances and scopes, read through the pipeline's ctx (predicates.mkCtx).
 { ren, lib }:
 rec {
   p = ren.predicates;
-  inst = n: {
-    __ren = "instance";
-    __id = "k:${n}";
-    id_hash = "k:${n}";
+  K = ren.kinds.mkKinds {
+    inherit lib;
+    decls = {
+      root.below = [ K.env ];
+      env.below = [
+        K.host
+        K.guest
+      ];
+      machine = { };
+      host = {
+        is = K.machine;
+        below = [ K.user ];
+        # host h holds user u; host h2 holds a user named like host h (user:h vs machine:h)
+        spawns.user = s: if s.name == "h" then { inherit (I.user) u; } else { inherit (I.user) h; };
+      };
+      guest.is = K.host;
+      user = { };
+      other = { };
+    };
   };
-  sc = id: kinds: i: {
-    inherit kinds;
-    instance = i;
-    __ren = "scope";
-    __scope = id;
+  I = ren.kinds.mkInstances {
+    inherit lib;
+    kinds = K;
+    decls = {
+      root.r = { };
+      env.e = { };
+      host = {
+        h = { };
+        h2 = { };
+      };
+      guest.g = { };
+      user = {
+        u = { };
+        h = { };
+      };
+      other.zzz = { };
+    };
   };
-  nodes = {
-    root = sc "root" [ "root" ] (inst "r");
-    env = sc "env" [ "env" ] (inst "e");
-    host = sc "host" [ "host" "machine" ] (inst "h");
-    user = sc "user" [ "user" ] (inst "u");
-    host2 = sc "host2" [ "host" "machine" ] (inst "h2");
+  sc = ren.scopes.mkScopes {
+    kinds = K;
+    instances = I;
   };
-  par = {
-    root = null;
-    env = "root";
-    host = "env";
-    user = "host";
-    host2 = "env";
+  ctx = p.mkCtx {
+    kinds = K;
+    inherit sc;
   };
-  kids = {
-    root = [ "env" ];
-    env = [
-      "host"
-      "host2"
-    ];
-    host = [ "user" ];
-    user = [ ];
-    host2 = [ ];
+  env = "root:r/env:e";
+  ids = {
+    root = "root:r";
+    inherit env;
+    host = "${env}/host:h";
+    host2 = "${env}/host:h2";
+    guest = "${env}/guest:g";
+    user = "${env}/host:h/user:u";
+    userh = "${env}/host:h2/user:h";
   };
-  anc = id: if par.${id} == null then [ ] else [ par.${id} ] ++ anc par.${id};
-  ctx = {
-    data = id: nodes.${id};
-    parent = id: par.${id};
-    children = id: kids.${id};
-    ancestors = anc;
-    siblings = id: if par.${id} == null then [ ] else lib.remove id kids.${par.${id}};
+  insts = {
+    inherit (I.host) h h2;
+    inherit (I.user) u;
+    uh = I.user.h;
+    inherit (I.guest) g;
+    inherit (I.other) zzz;
   };
-  kind = n: {
-    __ren = "kind";
-    name = n;
-  };
-  t = p.test ctx { };
-  hostK = kind "host";
+  inst = n: insts.${n};
+  kind = n: K.${n};
+  t = q: n: p.test ctx { } q ids.${n};
+  hostK = K.host;
 }
