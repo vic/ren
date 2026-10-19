@@ -2,7 +2,6 @@ stimpy: {
   view =
     let
       inherit (stimpy) lib;
-      t = lib.types;
       declared = [
         "kinds"
         "classes"
@@ -62,6 +61,12 @@ stimpy: {
             a: v:
             lib.filterAttrs (k: x: !(cfg.classes ? ${k}) || x != null) v # unset class: `null` (decl-types.nix)
             // {
+              includes = lib.imap0 (
+                i: b: # inline aspects refused for now (#21, #35)
+                lib.throwIfNot ((b.__ren.ref or null) == "aspect")
+                  "ren: aspect `${a}`: includes[${toString i}] is not a ref to a declared aspect (inline aspects are not supported, see #21)"
+                  b
+              ) v.includes;
               __ren = {
                 ref = "aspect";
                 name = a;

@@ -1,7 +1,7 @@
 { ren, lib }:
 let
   inherit (import ../../fixtures/mkflake.nix { inherit ren lib; }) inputs;
-  # mini fleet: class `sys` at box; aspect `a` includes inline aspects (fleet.md:511,576)
+  # mini fleet: class `sys` at box; aspect `a` includes `inc ren` (inline aspects refused, #21)
   mini = miniWith { };
   # `extra`: a second fleet module (one aspect defined in two files merges)
   miniWith =
@@ -32,6 +32,10 @@ let
         ren.aspects.ref.sys.r = 1;
       }
     );
+  refused = i: {
+    expectedError.type = "ThrownError";
+    expectedError.msg = "ren: aspect `a`: includes\\[${toString i}\\] is not a ref to a declared aspect";
+  };
 in
 {
   mkflake-inline = {
@@ -49,41 +53,29 @@ in
       expectedError.type = "ThrownError";
       expectedError.msg = "the option `r' has conflicting definitions";
     };
-    test-inline-named-lands = {
+    # control: a ref to a declared aspect lands
+    test-include-ref-lands = {
+      expr = (mini (ren: [ ren.aspects.ref ])).outputs.got;
+      expected.r = 1;
+    };
+    test-inline-named-refused = refused 0 // {
       expr =
         (mini (ren: [
           {
             name = "base";
             sys.n = 1;
           }
-        ])).outputs.got;
-      expected.n = 1;
+        ])).active;
     };
-    test-inline-unnamed-keyed-taker-index = {
+    test-inline-unnamed-refused = refused 1 // {
       expr =
         (mini (ren: [
           ren.aspects.ref
           { sys.u = 2; }
         ])).active;
-      expected = {
-        a = [ "root:r/box:b" ];
-        ref = [ "root:r/box:b" ];
-        "a/1" = [ "root:r/box:b" ];
-      };
     };
-    test-inline-unnamed-lands = {
-      expr =
-        (mini (ren: [
-          ren.aspects.ref
-          { sys.u = 2; }
-        ])).outputs.got;
-      expected = {
-        r = 1;
-        u = 2;
-      };
-    };
-    # an inline must not silently replace a declared aspect of the same name
-    test-inline-name-of-declared = {
+    # an inline with a declared aspect's name is still not a ref
+    test-inline-name-of-declared-refused = refused 0 // {
       expr =
         (mini (ren: [
           {
@@ -91,8 +83,6 @@ in
             sys.n = 1;
           }
         ])).active;
-      expectedError.type = "ThrownError";
-      expectedError.msg = "has the name of a declared aspect";
     };
   };
 }

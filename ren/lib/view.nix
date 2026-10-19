@@ -5,7 +5,7 @@ ren: {
   view =
     let
       inherit (ren) gen;
-      inherit (gen.prelude) imap0 filterAttrs nameValuePair;
+      inherit (gen.prelude) imap0 filterAttrs;
       t = ren.genLib.types;
       facet = type: default: {
         category = "facet";
@@ -21,11 +21,7 @@ ren: {
             excludes = facet (t.listOf t.raw) [ ];
             __ren = facet t.raw "aspect";
           };
-        # an authored `name` outranks the type's default name (priority 1500)
-        aspectModules = [
-          ({ options, ... }: { meta.named = options.name.highestPrio < 1500; })
-          (ren.declTypes.bareClass decl.classes)
-        ];
+        aspectModules = [ (ren.declTypes.bareClass decl.classes) ];
       };
       declared = [
         "kinds"
@@ -35,7 +31,7 @@ ren: {
     in
     {
       declared = declared ++ [ "aspects" ];
-      # Ren's aspect records; an inline in `includes` is named by its `name` or `<taker>/<index>` (fleet.md:511,576)
+      # Ren's aspect records; an `includes` element must be a ref (inline aspects refused: #21, #35)
       aspects =
         decl:
         let
@@ -56,20 +52,16 @@ ren: {
             // {
               inherit name;
               includes = imap0 (
-                i: b: if isRef b then b else norm (if b.meta.named then b.name else "${name}/${toString i}") b
+                i: b:
+                if isRef b then
+                  b
+                else
+                  throw "ren: aspect `${name}`: includes[${toString i}] is not a ref to a declared aspect (inline aspects are not supported, see #21)"
               ) e.includes;
               content = if e.meta.bare then ren.content.bare else filterAttrs (authored name e) e;
             };
-          below = a: builtins.concatMap (b: [ b ] ++ below b) (builtins.filter (b: !isRef b) a.includes);
-          top = builtins.mapAttrs norm decl.aspects;
-          named =
-            a:
-            if top ? ${a.name} then
-              throw "ren: inline aspect `${a.name}` in `includes` has the name of a declared aspect"
-            else
-              nameValuePair a.name a;
         in
-        top // builtins.listToAttrs (map named (builtins.concatMap below (builtins.attrValues top)));
+        builtins.mapAttrs norm decl.aspects;
       module =
         { lib, ... }:
         let

@@ -518,7 +518,7 @@ Every user-facing pattern in `~/hk/den/docs/src/content/docs`, read in full by 4
 |---|---|
 | aspect class bundle (`explanation/aspects:21`) | one aspect with several class keys (`hm-module`), `at = anyOf [ … ]` |
 | `includes` / nested aspect / `._` children (`guides/configure-aspects:116-225`) | `includes = [ … ]`; a group is a plain Nix attrset |
-| inline fn include (`explanation/aspects:52`) | an anonymous aspect inside `includes` |
+| inline fn include (`explanation/aspects:52`) | refused for now: an `includes` element must be a ref to a declared aspect; stable ids for anonymous aspects are a Gen gap (vic/ren#35) |
 | parametric `{ host, user }:` aspect, arg-shape gating (`explanation/parametric:20-67`) | content args = scope bindings; activation is `at`, never the arg shape |
 | class module forms `{ host, config, pkgs, ... }` (`explanation/class-modules:25-97`) | content fn args = bindings, channels and module args |
 | `excludes`, constraints `exclude`/`substitute`/`filterBy` (`explanation/structural:160-215`) | `excludes`; substitute = `excludes` + `includes` (aspect `quiet`) |
@@ -583,7 +583,7 @@ The table lists only patterns not already in **Den coverage** above.
 | chained forward classes (`ci/…/issue-645-chained-forward-classes.nix:41`) | forwards chain (class → class → class), acyclic |
 | same aspect in host and user schema includes, once per scope (`ci/…/relationship-fanout.nix:291`) | `at = anyOf [ host user ]`: one firing per scope |
 | identical values merge, different values error (`ci/…/issue-674-identical-values-merge.nix:14`, `instance-collection-merge.nix:127`) | the `attrs` law for outputs and channels |
-| named inline include identity, shared raw include dedup (`ci/…/nested-key-wrapper-identity.nix:221`, `shared-raw-include-splits.nix:17`) | module key `<aspect>@<scope path>`; an anonymous aspect in `includes` is keyed `<taker>/<index>` |
+| named inline include identity, shared raw include dedup (`ci/…/nested-key-wrapper-identity.nix:221`, `shared-raw-include-splits.nix:17`) | module key `<aspect>@<scope path>`; inline aspects in `includes` are refused for now (stable ids are a Gen gap, vic/ren#35) |
 | exclude by string rejected (`ci/…/excludes-string-form-rejected.nix:13`) | `excludes` takes refs only; a string is a type error |
 | exclude naming an aspect that never fires: a warning (`ci/…/unmatched-policy-exclude.nix:29`) | the same warning: an `excludes` that removes nothing |
 | quirk named like a class (`den.quirks.nixos`): throws (`ci/…/pipes.nix`) | class and channel names are disjoint: eval error |

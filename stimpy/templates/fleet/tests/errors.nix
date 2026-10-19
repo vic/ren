@@ -102,6 +102,26 @@ in
       )
     )
   );
+  # row: inline aspects in `includes` are refused for now (vic/ren#21, #35); a ref is fine
+  test-error-inline-include = {
+    expr =
+      builtins.deepSeq
+        (mod (
+          { ren, ... }:
+          {
+            ren.aspects.inline-taker = {
+              at = ren.kinds.host;
+              includes = [
+                ren.aspects.dev
+                { nixos = { }; }
+              ];
+            };
+          }
+        )).active
+        true;
+    expectedError.type = "ThrownError";
+    expectedError.msg = "aspect `inline-taker`: includes\\[1\\] is not a ref to a declared aspect";
+  };
   # row: no guest in a guest - guest on a guest makes no scope (see scopes.nix); the module still evaluates
   # output merge conflict: conflicts.nix (probe output; nixosConfigurations.lb needs forced system values)
   # UNTESTABLE-T1: unstratified omit/unless cycle - no template fixture; lib tests cover it
