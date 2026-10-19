@@ -53,7 +53,7 @@ ren: {
         renArgsAt = renArgs;
         argsFor = c: id: { outputs = strata.outputsFor outputs c id; };
         contentModules =
-          c: id: map (l: C.asModule (renArgs id) (content l.n c)) (filter (l: l.id == id) (at c));
+          c: id: map (l: C.classModule (renArgs id) (content l.n c)) (filter (l: l.id == id) (at c));
       };
       # ruling: channel `at` is the emitter scopes, also for emissions from a class `into` (fleet-ren.md:26,102)
       outside =
