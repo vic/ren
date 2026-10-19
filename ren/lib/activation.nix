@@ -1,79 +1,77 @@
-# Aspect activation. Any aspect-graph cycle throws (positive cycles too: no well-foundedness check, relax when needed).
+# Aspect activation = gen-program's well-founded model over one atom per (aspect, scope).
+# Positive include cycles are legal; a negative cycle leaves atoms UNDEFINED and throws.
 ren: {
   activation =
     let
       inherit (ren) gen predicates;
       inherit (builtins)
-        any
         attrNames
         concatMap
+        concatStringsSep
         elem
         filter
-        head
+        foldl'
         throw
         ;
       names = map (a: a.name);
-      # [ { ref; neg; } ] aspects named inside a predicate
-      refs =
-        neg: p:
-        if p.__ren == "aspect" then
-          [
-            {
-              ref = p.name;
-              inherit neg;
-            }
-          ]
-        else if p.__ren != "pred" then
-          [ ]
-        else if p.op == "when" then
-          [ ]
-        else if
-          elem p.op [
-            "and"
-            "anyOf"
-          ]
-        then
-          concatMap (refs neg) p.args
-        else
-          refs (neg || p.op == "not") p.args;
+      atom = a: s: "${a}@${s}";
+      lit = pos: neg: { inherit pos neg; };
+      one = [ (lit [ ] [ ]) ];
+      cross = xs: ys: concatMap (x: map (y: lit (x.pos ++ y.pos) (x.neg ++ y.neg)) ys) xs;
+      # not (C1 or C2 …) = and over i of (or over Ci's literals, each flipped)
+      flip = c: map (x: lit [ ] [ x ]) c.pos ++ map (x: lit [ x ] [ ]) c.neg;
     in
     {
       mkActivation =
-        { aspects, ctx }:
+        {
+          aspects,
+          ctx,
+        }:
         let
           ns = attrNames aspects;
-          # edges B -> A as { from; to; neg; }
-          edgeList = concatMap (
-            n:
-            let
-              a = aspects.${n};
-              mk = neg: from: to: { inherit from to neg; };
-            in
-            map (r: mk r.neg r.ref n) (if a.at == null then [ ] else refs false a.at)
-            ++ map (x: mk false n x) (names a.includes)
-            ++ map (x: mk true n x) (names a.excludes)
-          ) ns;
-          topo = gen.graph.topoOrder { } {
-            nodes = ns;
-            edges = n: map (e: e.to) (filter (e: e.from == n) edgeList);
-          };
-          bad = filter (c: any (e: e.neg && elem e.from c && elem e.to c) edgeList) topo.cycles;
-          show = c: builtins.concatStringsSep " -> " c;
-          checked =
-            if topo.ok then
-              true
-            else if bad != [ ] then
-              throw "ren: aspects not stratified: ${show (head bad)}"
-            else
-              throw "ren: aspect cycle: ${show (head topo.cycles)}";
-
           orSelf = s: [ s ] ++ ctx.ancestors s;
-          by =
-            field: a: s:
-            any (b: elem a (names aspects.${b}.${field}) && any (t: active b t) (orSelf s)) ns;
-          direct =
-            a: s: aspects.${a}.at != null && predicates.test ctx { activeAt = active; } aspects.${a}.at s;
-          active = a: s: checked && !(by "excludes" a s) && (direct a s || by "includes" a s);
+          # glue: compile `at` at scope s to a DNF over aspect atoms, [ { pos; neg; } ]
+          dnf =
+            p: s:
+            if p.__ren == "aspect" then
+              [ (lit [ (atom p.name s) ] [ ]) ]
+            else if p.__ren != "pred" || p.op == "when" then
+              (if predicates.test ctx { } p s then one else [ ])
+            else if p.op == "and" then
+              foldl' (acc: q: cross acc (dnf q s)) one p.args
+            else if p.op == "anyOf" then
+              concatMap (q: dnf q s) p.args
+            else if p.op == "within" then
+              concatMap (dnf p.args) (ctx.ancestors s)
+            else if p.op == "has" then
+              concatMap (dnf p.args) (ctx.children s)
+            else
+              foldl' (acc: c: cross acc (flip c)) one (dnf p.args s);
+          by = field: a: filter (b: elem a (names aspects.${b}.${field})) ns;
+          rules =
+            a: s:
+            let
+              # not excluded(a,s): no excluder is active on an ancestor-or-self of s
+              ex = concatMap (b: map (atom b) (orSelf s)) (by "excludes" a);
+              inc = concatMap (b: map (t: lit [ (atom b t) ] [ ]) (orSelf s)) (by "includes" a);
+              at = if aspects.${a}.at == null then [ ] else dnf aspects.${a}.at s;
+            in
+            map (c: {
+              head = atom a s;
+              inherit (c) pos;
+              neg = c.neg ++ ex;
+              relata = [ ];
+            }) (at ++ inc);
+          model = gen.program.model {
+            program = gen.program.program [ ] (concatMap (a: concatMap (rules a) ctx.order) ns);
+            interpretation = [ ];
+            prior = null;
+            complete = true;
+          };
+          checked =
+            model.undefinedAtoms == [ ]
+            || throw "ren: aspects not stratified: ${concatStringsSep ", " model.undefinedAtoms}";
+          active = a: s: checked && (model.resolve (atom a s)).included;
         in
         {
           inherit active;

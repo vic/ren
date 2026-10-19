@@ -25,7 +25,7 @@ rec {
   ctx = {
     data = id: r.scopes.${id};
     parent = r.parentOf;
-    inherit (r) children ancestors;
+    inherit (r) children ancestors order;
     siblings = id: lib.remove id (r.children (r.parentOf id));
   };
   p = ren.predicates;

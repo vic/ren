@@ -30,7 +30,7 @@ ren: {
       ctx = {
         data = id: sc.scopes.${id};
         parent = sc.parentOf;
-        inherit (sc) children ancestors;
+        inherit (sc) children ancestors order;
         siblings = id: lib.remove id (sc.children (sc.parentOf id));
       };
       classes = decl.classes or { };
