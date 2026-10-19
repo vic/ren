@@ -71,8 +71,8 @@ in
     ];
   };
   # an aspect ref in a predicate = "active here".
-  # nginx is included at stage, so it is active in stage's subtree (fleet.md:98),
-  # and ci matches ren.kinds.host through guest `is = host` (fleet.md:87)
+  # nginx is included at stage, so it is active in stage's subtree (fleet.md:102),
+  # and ci matches ren.kinds.host through guest `is = host` (fleet.md:91)
   test-http-port-follows-nginx = {
     expr = r.active.http-port;
     expected = [

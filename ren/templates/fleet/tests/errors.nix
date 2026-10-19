@@ -61,6 +61,22 @@ in
       }
     )).pools."flake-inputs".${i.root}
   );
+  # row: fold = one - two deployment emitters on one host
+  test-error-two-deployment-emitters = thrown (
+    (mod (
+      { ren, ... }:
+      {
+        ren.aspects.deploy-twice = {
+          at = ren.host.lb;
+          deployment = { ... }: {
+            address = "10.9.9.9";
+            user = "other";
+            tags = [ ];
+          };
+        };
+      }
+    )).pools.deployment.${i.lb}
+  );
   # row: parent-side spawns - spawns.user on a kind whose `below` lacks user
   test-error-spawns-user-without-below = thrown (
     force (

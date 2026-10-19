@@ -53,7 +53,7 @@ in
     expected = [ ];
   };
   # row: parent - alice@lb devices = the other 7 parents, scope-path (traversal) order:
-  # fleet.md:446 lists "stage, ci" (stage's own users precede the guest:ci subtree)
+  # fleet.md:448 lists "stage, ci" (stage's own users precede the guest:ci subtree)
   test-devices-alice-lb = {
     expr = r.pools.devices.${aliceLb};
     expected = [
@@ -160,7 +160,7 @@ in
       }
     ];
   };
-  # row: flake-file / anywhere - agenix once, from two features that agree; microvm from vm
+  # row: flake-file / anywhere - agenix from secrets (lb, web-*, stage, ci emit the same url), microvm from vm
   test-flake-inputs-root = {
     expr = r.pools.flake-inputs.${i.root};
     expected = {

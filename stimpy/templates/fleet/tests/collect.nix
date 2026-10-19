@@ -15,7 +15,7 @@ in
     expr = sorted r.emitted.deployment;
     expected = sorted i.metals;
   };
-  # nginx active in stage's subtree (fleet.md:98); ci is a host via `is` (fleet.md:87)
+  # nginx active in stage's subtree (fleet.md:102); ci is a host via `is` (fleet.md:91)
   test-emitted-backends-nginx-hosts = {
     expr = sorted r.emitted.backends;
     expected = sorted [
@@ -75,7 +75,7 @@ in
       "web-2"
     ];
   };
-  # `colmena` is a channel (fleet.md:302); its `into` writes `colmenaHive`, which forces
+  # `colmena` is a channel (fleet.md:306); its `into` writes `colmenaHive`, which forces
   # inputs.colmena (unfetched in Tier 1). The node names live in the root pool.
   test-outputs-colmena-nodes = {
     expr = names r.pools.colmena.${i.root};
@@ -117,6 +117,11 @@ in
   test-outputs-terraform-prod-edge-only = {
     expr = names r.outputs.terraformConfigurations;
     expected = [ "dns" ];
+  };
+  # the output name is fixed, so only `landed` shows that staging (edge = false) writes no dns
+  test-landed-terraform-prod-only = {
+    expr = names r.landed.terraform;
+    expected = [ i.prod ];
   };
   # row: flake-file option beside nixosConfigurations
   test-outputs-flake-file-inputs = {
@@ -211,8 +216,8 @@ in
     expr = r.landed.nixos ? ${i.studio};
     expected = false;
   };
-  # kernel `at = ren.kinds.host` matches ci (guest `is = host`, fleet.md:87);
-  # impermanence `at = metal` = host and not guest (fleet.md:121) does not
+  # kernel `at = ren.kinds.host` matches ci (guest `is = host`, fleet.md:91);
+  # impermanence `at = metal` = host and not guest (fleet.md:126) does not
   test-landed-nixos-kernel-not-impermanence-on-ci = {
     expr = [
       (has r.landed.nixos.${i.ci} "kernel")

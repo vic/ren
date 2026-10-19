@@ -20,12 +20,12 @@ in
     expr = probe (ren: ren.host.stage.name);
     expected = "stage";
   };
-  # fleet.md:105,14: `is P x` is an eval error when x has no scope on the current path (a bare instance)
+  # fleet.md:109,18: `is P x` is an eval error when x has no scope on the current path (a bare instance)
   test-is-bare-instance-throws = {
     expr = probe (ren: ren.lib.is ren.aspects.desktop ren.host.stage);
     expectedError.type = "ThrownError";
   };
-  # fleet.md:462,15: Ren exports `anyOf`, never `any` (gen-select's tombstone)
+  # fleet.md:466,19: Ren exports `anyOf`, never `any` (gen-select's tombstone)
   test-anyOf-not-any = {
     expr = probe (ren: {
       anyOf = ren.lib ? anyOf;

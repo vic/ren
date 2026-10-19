@@ -9,8 +9,68 @@ let
   ci = stage.microvm.vms.ci.config.config;
   home = o.homeConfigurations.alice-laptop.config;
   persist = map (d: d.directory) stage.environment.persistence."/persist".directories; # submodule list
+  release = hm: (lib.importJSON "${hm}/release.json").release;
+  helix = p: p.helix.version;
 in
 {
+  # fleet.md:441: ci builds with stable pkgs inside edge stage
+  test-guest-ci-stable-pkgs = {
+    expr = toString stage.microvm.vms.ci.pkgs.path;
+    expected = toString inputs.nixpkgs.outPath;
+  };
+  # fleet.md:444: the standalone home uses edge HM (stable HM has another release)
+  test-home-edge-hm = {
+    expr = home.home.version.release;
+    expected = release inputs.home-manager-unstable;
+  };
+  # fleet.md:443: alice + bob HM under darwin
+  test-darwin-hm-users = {
+    expr = builtins.attrNames o.darwinConfigurations.studio.config.home-manager.users;
+    expected = [
+      "alice"
+      "bob"
+    ];
+  };
+  # fleet.md:455: aerospace on studio homes, not on linux homes
+  test-aerospace-studio-not-lb = {
+    expr = [
+      o.darwinConfigurations.studio.config.home-manager.users.bob.programs.aerospace.enable
+      (nixos "lb").home-manager.users.alice.programs.aerospace.enable
+    ];
+    expected = [
+      true
+      false
+    ];
+  };
+  # fleet.md:450: every machine gets the edge helix (stable helix has another version)
+  test-overlays-helix-every-machine = {
+    expr = lib.unique (
+      map (n: helix o.nixosConfigurations.${n}.pkgs) [
+        "lb"
+        "web-1"
+        "web-2"
+        "stage"
+      ]
+      ++ [
+        (helix stage.microvm.vms.ci.config._module.args.pkgs)
+        (helix o.darwinConfigurations.studio.pkgs)
+      ]
+    );
+    expected = [ (helix inputs.nixpkgs-unstable.legacyPackages.x86_64-linux) ];
+  };
+  # fleet.md:467: the nixos class feeds the colmena and age-manifest channels
+  test-channel-into-colmena-age = {
+    expr = [
+      (builtins.attrNames o.colmenaHive.nodes)
+      (builtins.attrNames o.ageManifest)
+    ];
+    expected = lib.genList (_: [
+      "lb"
+      "stage"
+      "web-1"
+      "web-2"
+    ]) 2;
+  };
   test-hostname = {
     expr = (nixos "lb").networking.hostName;
     expected = "lb";
@@ -86,7 +146,7 @@ in
     expr = home.services.syncthing.enable;
     expected = true;
   };
-  # fleet.md:461,389: `is ren.aspects.desktop parent` on the path: tray on for stage users only
+  # fleet.md:465,393: `is ren.aspects.desktop parent` on the path: tray on for stage users only
   test-tray-stage-alice = {
     expr = stage.home-manager.users.alice.services.syncthing.tray.enable;
     expected = true;
@@ -107,12 +167,12 @@ in
     expr = o.darwinConfigurations.studio.config.system.defaults.dock.autohide;
     expected = true;
   };
-  # C10: motd evaluates on darwin (row 439)
+  # C10: motd evaluates on darwin (fleet.md:443)
   test-darwin-motd = {
     expr = o.darwinConfigurations.studio.config.environment.etc.motd.text;
     expected = "managed by ren";
   };
-  # C8: dev lands git as a package on every os (fleet.md:439)
+  # C8: dev lands git as a package on every os (fleet.md:443)
   test-darwin-git-pkg = {
     expr = lib.any (
       p: (p.pname or "") == "git"
