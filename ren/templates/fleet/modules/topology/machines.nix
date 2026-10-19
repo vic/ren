@@ -30,6 +30,5 @@ in
       networking.hostName = machine.name;
       nixpkgs.overlays = overlays;
     };
-    records = { machine, ... }: { ${machine.name} = machine.addr; };
   };
 }

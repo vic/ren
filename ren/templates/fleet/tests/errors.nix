@@ -49,6 +49,20 @@ in
         }
       )).pools.overlays.${i.lb}
   );
+  # row: content-function rule - a bare `final: prev:` class value is not content either
+  test-error-bare-class-function = thrown (
+    builtins.deepSeq
+      (mod (
+        { ren, ... }:
+        {
+          ren.aspects.bad-class = {
+            at = ren.kinds.host;
+            nixos = final: prev: { };
+          };
+        }
+      )).landed
+      true
+  );
   # row: flake-file - two features giving agenix different urls
   test-error-agenix-url-conflict = thrown (
     (mod (

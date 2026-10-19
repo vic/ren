@@ -23,6 +23,9 @@ in
     to = _: ren.environment.prod;
   };
 
+  # `base` (machines.nix) gets its A record here: one aspect, two files, merged
+  ren.aspects.base.records = { machine, ... }: { ${machine.name} = machine.addr; };
+
   ren.aspects.dns = {
     at = ren.environment.prod;
     terraform = { records, lib, ... }: {

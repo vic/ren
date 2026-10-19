@@ -4,14 +4,12 @@ ren: {
     let
       xml = f: builtins.toXML f;
       isContentFn = f: builtins.isFunction f && builtins.match ".*<attrspat.*" (xml f) != null;
+      isBare = f: builtins.isFunction f && !isContentFn f;
       bare = throw "ren: bare function emission; wrap it in `{ ... }:`";
       asModule =
         renArgs: v:
         # gen-bind binds a content fn, or the fns in a class value's deferredModule `imports`
-        if builtins.isFunction v && !isContentFn v then
-          bare
-        else
-          (ren.gen.bind.wrap { bindings = renArgs; } v).module;
+        if isBare v then bare else (ren.gen.bind.wrap { bindings = renArgs; } v).module;
       callContent = renArgs: v: if builtins.isFunction v then (asModule renArgs v) { } else v;
       # aspect = { name; content = { key = value; }; }; result = { key = [ scope ids ]; }
       landing =
@@ -61,6 +59,8 @@ ren: {
       inherit
         callContent
         isContentFn
+        isBare
+        bare
         mkPools
         landing
         asModule

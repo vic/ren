@@ -37,11 +37,14 @@ stimpy: {
       aspectsAt = id: filter (a: lib.elem id act.active.${a}) (attrNames aspects);
       # fn content: Ren formals pre-applied, the rest stay module args
       wrap =
-        a: id: m:
+        a: id: ms:
         let
-          fa = lib.functionArgs m;
-          mine = builtins.intersectAttrs fa (argsAt id);
           mod =
+            m:
+            let
+              fa = lib.functionArgs m;
+              mine = builtins.intersectAttrs fa (argsAt id);
+            in
             if lib.isFunction m then
               lib.setFunctionArgs (margs: m (margs // mine)) (removeAttrs fa (attrNames mine))
             else
@@ -53,12 +56,9 @@ stimpy: {
             st.scopes.${id}.__ren.path
           ];
           _file = "ren:${a}";
-          imports = [ mod ];
+          imports = map mod ms; # one module per file that defines the class (decl-types.nix)
         };
-      isContentFn =
-        f:
-        lib.isFunction f
-        && (lib.hasInfix "<attrspat" (builtins.toXML f) || f ? __functionArgs || f ? __functor);
+      inherit (stimpy.declTypes) isContentFn;
       emit =
         a: id: c:
         let

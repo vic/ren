@@ -1,4 +1,4 @@
-# Ren fleet demo — v32 (2026-10-19) — EXPLORATION: reduced surface (genie v29.A adopted)
+# Ren fleet demo — v33 (2026-10-19) — EXPLORATION: reduced surface (genie v29.A adopted)
 
 v29.A = genie's fork of vic's v29 (gist `fbc69bfc`). It keeps v29's reduction and fixes the places where a rename to a Gen term inverted or overloaded that term. v29 explores how far the surface can shrink. **The previous version is backed up as `vic/fleet-v28.md`**, and we may revert to it. v29 renames words to Gen's own terms only where Gen means the same thing. It merges words that did the same job, and makes the rest relate to each other. Design only; nothing implements it. Feedback goes after `> VIC:` lines.
 
@@ -102,6 +102,7 @@ That is one more than v29, because `same` comes back. `is` still covers kind sub
   - `includes` and `excludes` work in the aspect's scopes and their subtrees.
   - A key naming a class is config; a key naming a channel is an emission; any other key is an error.
   - A key that lands in none of the aspect's scopes is an error.
+  - One aspect or kind declared in several files merges like a module option: class content merges as modules, `includes`, `excludes` and `below` concatenate, `spawns` merges by child, and `at`, channel values and kind fields must agree (different values are a conflict error).
 - **predicates**: refs (kind, instance, aspect, `e`) plus `and anyOf not when within has`.
 - **`same a b`**: identity (gen-schema `id_hash`). It needs no scope, so it works on data kinds and inside `spawns`.
   - `when f` sees bindings only.
@@ -451,7 +452,7 @@ ren.lib.mkFlake inputs {
 | impermanence (`set`) | stage persists `/var/lib/nginx`, `/var/lib/docker`, alice's and bob's syncthing dirs, once each | ci's docker dir on stage; a duplicate path |
 | name uniqueness | — | `ren.host.ci` and `ren.guest.ci` both evaluating |
 | output merge | — | two scopes writing different `nixosConfigurations.lb` evaluating |
-| content-function rule | — | a bare `final: prev:` emission evaluating as content |
+| content-function rule | — | a bare `final: prev:` value evaluating as content |
 | hmPlatforms (`homeDarwin`) | aerospace in alice's and bob's homes on studio only | aerospace in any linux, phone or standalone home |
 | tags = emission | colmena tags for stage include `web` (nginx emits it) | a `tags` key reserved by Ren |
 | flake-file | `flake-file.inputs.{agenix,microvm}` written once, a top-level option beside `nixosConfigurations` | an input listed by an aspect that is not active; two aspects giving `agenix` different urls evaluating |
@@ -620,6 +621,7 @@ Sources:
 | aspect metadata, tags: L5141, L28728, L28734, L28835 | `tags` is just an emission (fold `set`); `deployment.tags = tags` (not `meta`: gen-aspects reserves it) |
 | `den.hosts.<h>.includes` dropped: #663; `include` typo silent: L14871; early shape errors: L27758, L35195, L31077 | strict kinds; a key that is not a class or channel, or lands nowhere, is an eval error |
 | `os` to systemManager: #718; finix: #662; disko: L30402; timezone for nixos+darwin: L24576 | an `os` class branch; a class per builder |
+| one aspect defined in several files, content fns included: L11448 | one aspect (or kind) in several files merges like a module option (v33): class content merges as modules; channel values and `at` must agree |
 | nix-on-droid: #517; terranix, per-host plan/apply: #115, L9418, L15871, L16194, L16263 | `droid` class; `terraform` class (env or host) |
 | custom entity kinds, k8s clusters, identities, domains: #701, L1233, L1312, L7046, L9659 | `ren.kinds.*` + a class |
 | service discovery, vhost → proxy, contributes-to, host A reacts to host B: L1241, L1891, L3626, L8626, L8666, L8718, L10555, L10638, L13153, L14353, L15580, L22851, L17277, L26453, L28072 | channels with `from`/`to` predicates; `is P x` |
@@ -663,7 +665,6 @@ Sources:
 |---|---|
 | patch an attr of a third-party aspect or its output before merge: #443, L4923, L6072 | an override form `ren.aspects.x.override = f`; `excludes` + `includes` covers only whole-aspect swaps |
 | nested aspect groups (`dev.cli.bat`) without `provides`: L5146, L5153, L5280, L6019, L19401 | a rule telling a group (no class, channel or reserved keys) from an aspect |
-| one aspect defined in several files, content fns included: L11448 | a merge law for content functions (merge their results) |
 | a schema on channel values: L30891 | a channel `type` key, checked at emission |
 | use Ren aspects outside Ren: #569 | `ren.lib.moduleOf aspect scope` |
 | priority by specificity (`tux@igloo` over `tux`): #686 | instance ref > kind ref, mapped to `mkOverride` |

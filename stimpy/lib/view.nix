@@ -60,7 +60,7 @@ stimpy: {
           inherit (cfg) classes channels;
           aspects = lib.mapAttrs (
             a: v:
-            v
+            lib.filterAttrs (k: x: !(cfg.classes ? ${k}) || x != null) v # unset class: `null` (decl-types.nix)
             // {
               __ren = {
                 ref = "aspect";
@@ -85,16 +85,7 @@ stimpy: {
         {
           options.ren = lib.mkOption {
             default = { };
-            type = t.submodule {
-              freeformType = t.lazyAttrsOf (t.lazyAttrsOf t.deferredModule);
-              options = lib.genAttrs declared (
-                _:
-                lib.mkOption {
-                  type = t.lazyAttrsOf t.raw;
-                  default = { };
-                }
-              );
-            };
+            type = stimpy.declTypes.fleet;
           };
           config._module.args.ren = mkView renLib config.ren;
         };
