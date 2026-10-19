@@ -214,7 +214,7 @@ ren.lib.mkFlake inputs {
       };
     };
 
-    nixosTest = {                                                   # each content key = one VM test (not named `checks`: a class name is a forward key)
+    checks = {                                                   # each content key = one VM test at `checks.<sys>.<name>`
       at   = ren.kinds.system;
       into = { system, ... }: ms:
         let tests = (lib.evalModules { modules = ms ++ [ { freeformType = t.attrsOf t.deferredModule; } ]; }).config;
@@ -444,7 +444,7 @@ ren.lib.mkFlake inputs {
       services.prometheus.scrapeConfigs = map (j: { job_name = j.job; static_configs = [ { targets = [ j.target ]; } ]; }) scrape; };
 
     web-check = { at = ren.system.x86_64-linux;                     # a VM test across two machines
-                  nixosTest.web = { nodes.web = { services.nginx.enable = true; networking.firewall.allowedTCPPorts = [ 80 ]; };
+                  checks.web = { nodes.web = { services.nginx.enable = true; networking.firewall.allowedTCPPorts = [ 80 ]; };
                                     nodes.client = { };
                                     testScript = ''start_all(); web.wait_for_unit("nginx"); client.wait_until_succeeds("curl -sf http://web/")''; }; };
 
@@ -501,7 +501,7 @@ ren.lib.mkFlake inputs {
 | channel `into` | `packages.<sys>.hello` from the `packages` channel; `colmenaHive` and `ageManifest` fed by the nixos class | `tools.packages` evaluated as a module (`deferredModule`) |
 | hosts from JSON (#31) | `host:web-1`, `host:web-2` under prod, read from `_inventory.json`; names looked up as refs (`ren.environment.${name}`) | a string where a ref belongs evaluating (`environment = "prod"` is refused: not an instance of kind environment) |
 | generated values (#28) | one `vars` output: `vars.shared.ca` (declared at `ren.fleet.main`); `vars.per-machine.{lb,web-1,web-2,stage}.deploy-key` (declared by `deploy-record`) | a per-machine entry for ci or studio; values generated at eval (generation is a CLI job) |
-| VM checks (#32) | `checks.x86_64-linux.web`: a `runNixOSTest` with nodes `client`, `web` (evaluated, not run) | a check under `aarch64-linux` or `aarch64-darwin`; a class named `checks` (a class name is a forward key, so it can't also be the output) |
+| VM checks (#32): tests defined on aspects, class `checks` writes its own name | `checks.x86_64-linux.web`: a `runNixOSTest` with nodes `client`, `web` (evaluated, not run) | a check under `aarch64-linux` or `aarch64-darwin` |
 | `buildHost` (#32) | `deployment.buildHost = "10.0.1.1"` for web-2 (from JSON); `null` for lb, web-1, stage | a `buildHost` record for ci or studio (`deployment` is `at = metal`) |
 | facter (#32) | `facter` active on lb, web-1, web-2, stage | `hardware.facter.reportPath` set on a host with no `./facter/<host>.json` (the template ships none) |
 

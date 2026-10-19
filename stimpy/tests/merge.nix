@@ -55,6 +55,10 @@ in
       "int"
     ];
   };
+  test-below-two-files-deduped = {
+    expr = (eval [ { ren.kinds.box.below = [ "b" ]; } ]).kinds.box.below;
+    expected = [ "b" ];
+  };
   # negative control: the same field with a different type is a real clash
   test-kind-field-clash = {
     expr =

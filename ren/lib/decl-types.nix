@@ -12,7 +12,11 @@ ren: {
         t.submodule {
           freeformType = t.lazyAttrsOf t.raw;
           options = {
-            below = opt (t.listOf t.raw) [ ];
+            below = ren.genLib.mkOption {
+              type = t.listOf t.raw;
+              default = [ ];
+              apply = ren.gen.prelude.unique; # first-seen order
+            };
             spawns = opt (t.lazyAttrsOf t.raw) { };
           };
         }

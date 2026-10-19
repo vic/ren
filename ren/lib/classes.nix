@@ -65,9 +65,12 @@ ren: {
               }
             ) (attrNames res.${key p.c p.id})
           ) pairs;
-          fwd = filter (r: elem r.k classNames) routed;
+          # a class's own name forwards up only if an ancestor has that class, else it is an output
+          isFwd =
+            r: elem r.k classNames && (r.k != r.c || builtins.any (t: branchAt r.k t != null) (ancestors r.id));
+          fwd = filter isFwd routed;
           forwardedTo = c: id: map (r: r.v) (filter (r: r.k == c && target r.c r.id r.k == id) fwd);
-          rest = filter (r: !(elem r.k classNames)) routed;
+          rest = filter (r: !(isFwd r)) routed;
           isChan = r: elem r.k channelNames;
         in
         {

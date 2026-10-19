@@ -35,6 +35,13 @@ stimpy: {
         lib.findFirst (t: content.branches.${j}.${t} != null)
           (throw "ren: ${c.k} at ${c.id}: no ${j} scope to forward into")
           ((if j == c.k then [ ] else [ c.id ]) ++ st.ancestors.${c.id});
+      # a class's own name forwards up only if an ancestor has that class, else it is an output
+      fwdKeys =
+        c:
+        filter (
+          j:
+          classes ? ${j} && (j != c.k || lib.any (t: content.branches.${j}.${t} != null) st.ancestors.${c.id})
+        ) (attrNames c.r);
       fwds = concatMap (
         c:
         map (j: {
@@ -49,7 +56,7 @@ stimpy: {
             ];
             imports = [ c.r.${j} ];
           };
-        }) (filter (j: classes ? ${j}) (attrNames c.r))
+        }) (fwdKeys c)
       ) cols;
       fwdInto = k: id: filter (f: f.j == k && f.t == id) fwds;
       # channel -> [ { id; v; } ] emitted by collectors
@@ -71,13 +78,13 @@ stimpy: {
         )
       ) (attrNames channels);
       outputs = merge.mergeStrict [ ] (
-        [ { } ] ++ map (c: removeAttrs c.r (attrNames classes ++ attrNames channels)) cols ++ chanOuts
+        [ { } ] ++ map (c: removeAttrs c.r (fwdKeys c ++ attrNames channels)) cols ++ chanOuts
       );
       # fleet.md:427,457
       checks =
         map (
           c:
-          !(lib.functionArgs c.into ? outputs && lib.any (j: classes ? ${j}) (attrNames c.r))
+          !(lib.functionArgs c.into ? outputs && fwdKeys c != [ ])
           || throw "ren: stratum 3 cycle: ${c.k} at ${c.id} reads outputs and forwards"
         ) cols
         ++ map (f: builtins.seq f.t true) fwds;
