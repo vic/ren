@@ -20,9 +20,9 @@ ren: {
         concatMap
         elem
         filter
-        genericClosure
         head
         ;
+      inherit (ren.gen.graph) reachableFrom;
       classNames = attrNames classes;
       # per class, per branch: the scopes it runs at and the top-level keys it returns there
       info = lib.mapAttrs (
@@ -44,13 +44,7 @@ ren: {
       fwdOf = filter (k: elem k classNames);
       forwards = c: concatMap (bi: fwdOf bi.keys) info.${c};
       # c plus the classes reachable from one of its branches' forwards (not c's other branches)
-      reach =
-        c: start:
-        [ c ]
-        ++ map (x: x.key) (genericClosure {
-          startSet = map (key: { inherit key; }) start;
-          operator = x: map (key: { inherit key; }) (forwards x.key);
-        });
+      reach = c: start: [ c ] ++ start ++ concatMap (reachableFrom { edges = forwards; }) start;
       produces =
         o:
         if elem o classNames || channels ? ${o} then
