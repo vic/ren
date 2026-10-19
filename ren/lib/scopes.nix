@@ -11,7 +11,6 @@ ren: {
         attrNames
         concatMap
         elem
-        elemAt
         filter
         genList
         length
@@ -20,8 +19,7 @@ ren: {
         sort
         ;
       G = gen.scope;
-      nv = name: value: { inherit name value; };
-      imap = f: l: genList (i: f i (elemAt l i)) (length l);
+      inherit (gen.prelude) imap0 nameValuePair;
       dk = i: "d${toString i}";
     in
     {
@@ -60,7 +58,7 @@ ren: {
             let
               p = (self.node pid).decls;
             in
-            listToAttrs (imap (mkNode p) (childrenOf p.scope));
+            listToAttrs (imap0 (mkNode p) (childrenOf p.scope));
           M = length (concatMap insts (attrNames instances));
           level =
             i:
@@ -73,7 +71,7 @@ ren: {
                   spawns.${dk (i + 1)} = spawn i;
                 }
             ) (dk i);
-          rootNodes = imap (mkNode { }) (concatMap insts roots);
+          rootNodes = imap0 (mkNode { }) (concatMap insts roots);
           g = G.eval { parseParent = ren.scopesParent; } { children = _: _: { }; } {
             # gen stamps a spawned node's id, `type` and `parent` (its host); only roots state theirs.
             nodes = mapAttrs (
@@ -89,15 +87,14 @@ ren: {
             kinds = G.mkKinds (genList (j: level (M - j)) (M + 1));
           };
           nodes = sort (a: b: a.decls.rank < b.decls.rank) (map g.node g.allNodeIds);
-          byId = listToAttrs (map (n: nv n.id n) nodes);
-          parentOf = id: byId.${id}.parent;
-          ancestors = id: if parentOf id == null then [ ] else [ (parentOf id) ] ++ ancestors (parentOf id);
+          byId = listToAttrs (map (n: nameValuePair n.id n) nodes);
         in
         {
           scopes = mapAttrs (_: n: n.decls.scope) byId;
           order = map (n: n.id) nodes;
           children = id: map (n: n.id) (filter (n: n.parent == id) nodes);
-          inherit parentOf ancestors;
+          parentOf = G.parent g;
+          ancestors = G.ancestors g;
         };
     };
 }

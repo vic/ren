@@ -34,7 +34,6 @@ ren: {
             concatMap
             elem
             filter
-            head
             ;
           key = c: id: "${c}@${id}";
           # lazy fixpoint: a scope's ms read the forwards routed to it, so class order never matters
@@ -51,13 +50,9 @@ ren: {
           );
           target =
             c: id: k:
-            let
-              cands = filter (t: branchAt k t != null && !(k == c && t == id)) ([ id ] ++ ancestors id);
-            in
-            if cands == [ ] then
-              throw "ren: class `${c}` at ${id} forwards to `${k}` but no scope has a `${k}` branch"
-            else
-              head cands;
+            ren.gen.prelude.findFirst (t: branchAt k t != null && !(k == c && t == id))
+              (throw "ren: class `${c}` at ${id} forwards to `${k}` but no scope has a `${k}` branch")
+              ([ id ] ++ ancestors id);
           # scopeOrder is children first, so forwards keep child-before-parent order
           routed = concatMap (
             p:

@@ -4,19 +4,7 @@ ren: {
     let
       xml = f: builtins.toXML f;
       isContentFn = f: builtins.isFunction f && builtins.match ".*<attrspat.*" (xml f) != null;
-      hasEllipsis = f: builtins.match ".*<attrspat ellipsis=\"1\".*" (xml f) != null;
       bare = throw "ren: bare function emission; wrap it in `{ ... }:`";
-      callContent =
-        renArgs: v:
-        if !builtins.isFunction v then
-          v
-        else if !isContentFn v then
-          bare
-        else if hasEllipsis v then
-          v renArgs
-        else
-          v (builtins.intersectAttrs (builtins.functionArgs v) renArgs);
-      # setFunctionArgs without nixpkgs; module args win over ren args only for names ren lacks.
       asModule =
         renArgs: v:
         if !builtins.isFunction v then
@@ -24,10 +12,8 @@ ren: {
         else if !isContentFn v then
           bare
         else
-          {
-            __functor = _: margs: v (margs // renArgs);
-            __functionArgs = removeAttrs (builtins.functionArgs v) (builtins.attrNames renArgs);
-          };
+          (ren.gen.bind.wrap { bindings = renArgs; } v).module;
+      callContent = renArgs: v: if builtins.isFunction v then (asModule renArgs v) { } else v;
       # aspect = { name; content = { key = value; }; }; result = { key = [ scope ids ]; }
       landing =
         {
@@ -62,10 +48,7 @@ ren: {
         order:
         let
           pos = builtins.listToAttrs (
-            builtins.genList (i: {
-              name = builtins.elemAt order i;
-              value = i;
-            }) (builtins.length order)
+            ren.gen.prelude.imap0 (i: id: ren.gen.prelude.nameValuePair id i) order
           );
           # folds see emissions in scope traversal order (fleet.md:444); sort is stable within a scope
           inOrder = builtins.sort (a: b: pos.${a.path} < pos.${b.path});

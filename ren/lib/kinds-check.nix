@@ -45,7 +45,7 @@ ren: {
                 __ren = "instance";
                 kind = k;
                 __kind = kinds.${k}.schema; # gen-select `entity` takes the entry's kind value first
-                __id = "${rootOf kinds k lib}:${n}";
+                __id = ren.gen.assemble.mkId (rootOf kinds k lib) n;
               };
         in
         builtins.mapAttrs (k: builtins.mapAttrs (mkOne k)) (builtins.intersectAttrs decls registries);
