@@ -191,22 +191,26 @@ recursion, never a wrong value.
 
 ## How Ren maps to Gen
 
-| Ren construct | Gen owner | status |
-|---|---|---|
-| `below` / `spawns` | gen-scope `mkKind { name; below; spawns; }` | direct |
-| `and anyOf not`, refs | gen-select `and` / `anyOf` / `not` / `kind` / `entity` | direct |
-| `within`, `has`, `parent` | gen-select `within` / `has` / `parentMatches` | direct |
-| `when f` | gen-select `when` | 1-line adapter |
-| `is` subtyping | gen-select `subkind` | glue |
-| `same` | gen-schema `id_hash` | direct |
-| typed strict kinds | gen-schema `mkInstanceRegistry`, `mkStrictModule` | direct |
-| aspects, `includes`, class vs channel keys | gen-aspects `includes`, `keyCategory` | direct |
-| channels with `into` | gen-delivery `realize` | glue |
-| group closure | gen-graph `lib/fixpoint.nix` | direct (file exists; not read further) |
-| `excludes` | none | gap |
-| forwarding | none | gap |
+What `ren/lib` calls today (`grep -rho 'gen\.[a-z]*' ren/lib`), and the Ren code that stands in where Gen is not called yet:
 
-Rows come from "Gen mapping" in [`design/fleet.md`](design/fleet.md). Ren pushes Gen forward at the gaps.
+| Ren construct | Gen it calls | Ren glue | status |
+|---|---|---|---|
+| scope tree, `below` / `spawns` | gen-scope `mkKinds`, `eval` (with `parseParent`) | `lib/scopes.nix`: kinds become depth levels `d0..dM`, because gen-scope refuses a kind in its own `below` | glue ([sini/gen-scope#2](https://github.com/sini/gen-scope/issues/2)) |
+| `and anyOf not within has` | gen-select `and` / `anyOf` / `not` / `within` / `has` / `matches` | — | direct |
+| kind, instance, aspect refs; `is` subtyping | gen-select `when` | `lib/predicates.nix`: each ref compiles to a `when` closure. gen-select `kind` / `subkind` / `entity` need gen-schema kind values, and Ren kinds are not those | glue |
+| `when f` | gen-select `when` | — | 1-line adapter |
+| `same` | gen-schema `evalSchema`, `identityHashForKind` | `lib/identity.nix` | direct |
+| typed strict kinds, instances | gen-merge `evalModuleTree`, `types` | `lib/kinds.nix`, `lib/kinds-check.nix` (not gen-schema registries) | glue |
+| folds `list` / `one` | gen-scope `folds.list` / `folds.one` | — | direct |
+| folds `set` / `attrs` | — | `lib/folds.nix` (gen-scope has no dedup set and no recursive attrs merge) | gap ([sini/gen-scope#2](https://github.com/sini/gen-scope/issues/2)) |
+| aspect cycle check | gen-graph `topoOrder` | `lib/activation.nix` | direct |
+| aspects, `includes`, `excludes`, `has F` | — (gen-aspects, gen-program not called) | `lib/activation.nix` | gap |
+| class / channel keys, landing | — (gen-aspects `keyCategory` not called) | `lib/pipeline-out.nix`, `lib/content.nix` | gap |
+| classes, forwarding, channels with `into` | — (gen-delivery not called) | `lib/classes.nix` | gap |
+| `lib` without nixpkgs | gen-prelude, gen-merge | `lib/gen-lib.nix` shims seven helpers | gap ([sini/gen-prelude#1](https://github.com/sini/gen-prelude/issues/1)) |
+| importing Gen | the gen hub, `import gen { }` | — | about 20s of the test run ([sini/gen#2](https://github.com/sini/gen/issues/2)) |
+
+Ren calls 6 of the hub's roster members today: prelude, merge, scope, select, graph and schema. The gap rows are where Ren pushes Gen forward.
 
 ## How Ren maps to Den
 
@@ -276,8 +280,14 @@ modules/
 
 ## Status and testing
 
-Stimpy runs the template: tests 208/208, e2e 23/23. The Ren port to the shared template is
-in progress. Run all checks at the repository root:
+Both implementations run the shared template (`just ci` at 9ed4bf0):
+
+| | tests | e2e |
+|---|---|---|
+| Stimpy | 217/217 | 25/25 |
+| Ren | 186/186 | 25/25 |
+
+The 112 `templates.*` tests are the same for both; the `lib.*` suites differ. Run all checks at the repository root:
 
 ```
 nix-shell -p just --run 'just ci'
