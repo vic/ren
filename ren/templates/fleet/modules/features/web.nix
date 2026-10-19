@@ -28,7 +28,7 @@ in
   ren.aspects.nginx = {
     # included only
     nixos.services.nginx.enable = true;
-    meta = { ... }: "web";
+    tags = { ... }: "web";
     backends = { host, ... }: host.addr;
     persist = { ... }: "/var/lib/nginx";
   };

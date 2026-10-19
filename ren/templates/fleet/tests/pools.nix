@@ -14,14 +14,14 @@ in
     expr = r.pools.deployment.${i.lb}.user;
     expected = "deploy";
   };
-  # tags = the meta pool at the same scope; lb has no nginx so nothing was emitted there
-  test-deployment-lb-tags-eq-meta = {
+  # tags = the tags pool at the same scope; lb has no nginx so nothing was emitted there
+  test-deployment-lb-tags-eq-pool = {
     expr = r.pools.deployment.${i.lb}.tags;
     expected = [ ];
   };
-  # row: meta = emission (nginx emits "web" via meta; no reserved key)
-  test-meta-stage-web = {
-    expr = lib.elem "web" r.pools.meta.${i.stage};
+  # row: tags = emission (nginx emits "web" via tags; no reserved key)
+  test-tags-stage-web = {
+    expr = lib.elem "web" r.pools.tags.${i.stage};
     expected = true;
   };
   test-deployment-stage-tags-web = {
