@@ -1,15 +1,16 @@
 # Package channels: which nixpkgs, home-manager and nix-darwin a scope builds with.
 {
+  ren,
   lib,
   inputs,
-  opt,
   ...
 }:
 let
+  inherit (ren.helpers) opt;
   t = lib.types;
 in
 {
-  _module.args.pkgsOf = m: m.channel.nixpkgs.legacyPackages.${m.system.name}; # m: anything with channel + system
+  ren.helpers.pkgsOf = m: m.channel.nixpkgs.legacyPackages.${m.system.name}; # m: anything with channel + system
 
   ren.kinds.channel = {
     nixpkgs = t.raw;

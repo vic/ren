@@ -78,21 +78,21 @@ In Den you write a policy for each edge (`to-fleet`, `fleet-to-envs`, `env-to-ho
 ### Predicates as `at`
 
 ```nix
-_module.args.metal = and [
+ren.helpers.metal = and [
   ren.kinds.host
   (not ren.kinds.guest)
 ]; # physical nixos hosts
 
 ren.aspects.vm-host = {
   at = and [
-    metal
+    ren.helpers.metal
     (has ren.kinds.guest)
   ];
   nixos.imports = [ inputs.microvm.nixosModules.host ];
 };
 ```
 
-`metal` is a plain value. `has` matches a scope with a matching child. `within` matches a
+`ren.helpers.metal` is a plain value. `has` matches a scope with a matching child. `within` matches a
 scope with a matching ancestor: `htop` uses `at = and [ ren.user.alice (within ren.host.web-1) ]`.
 In Den you select scopes with policies and `den.schema.<kind>.includes`. In Ren, every
 selection is one `at` predicate.
@@ -159,7 +159,7 @@ In Den you use forward, provide or route policies for this. In Ren, a forward is
 ```nix
 ren.channels.colmena = {
   fold = attrs;
-  at = metal;
+  at = ren.helpers.metal;
   to = _: ren.fleet.main; # fed by the nixos class
   into = { ... }: nodes: {
     colmenaHive = inputs.colmena.lib.makeHive (

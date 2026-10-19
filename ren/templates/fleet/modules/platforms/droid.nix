@@ -3,7 +3,6 @@
   ren,
   lib,
   inputs,
-  pkgsOf,
   ...
 }:
 {
@@ -11,7 +10,7 @@
     at = ren.kinds.phone;
     into = { phone, ... }: ms: {
       nixOnDroidConfigurations.${phone.name} = inputs.nix-on-droid.lib.nixOnDroidConfiguration {
-        pkgs = pkgsOf phone;
+        pkgs = ren.helpers.pkgsOf phone;
         modules = ms;
       };
     };

@@ -42,8 +42,7 @@ let
     ms:
     (lib.evalModules {
       modules = [
-        view.module
-        { _module.args.renLib = renLib; }
+        (view.module renLib)
         vocab
       ]
       ++ ms;

@@ -113,6 +113,8 @@ That is one more than v29, because `same` comes back. `is` still covers kind sub
   - A key naming a class is config; a key naming a channel is an emission; any other key is an error.
   - A key that lands in none of the aspect's scopes is an error.
   - One aspect or kind declared in several files merges like a module option: class content merges as modules, `includes`, `excludes` and `below` concatenate, `spawns` merges by child, and `at`, channel values and kind fields must agree (different values are a conflict error).
+- **helpers**: `ren.helpers.<name>` is a value shared by several fleet files (`lazyAttrsOf raw`: one name, one file). It may be a predicate, a function or an option type.
+  - The fleet adds exactly two module args, `ren` and `inputs`. A shared helper goes in `ren.helpers.<name>`, never in `_module.args`.
 - **predicates**: refs (kind, instance, aspect, `e`) plus `and anyOf not when within has`.
 - **`same a b`**: identity (gen-schema `id_hash`). It needs no scope, so it works on data kinds and inside `spawns`.
   - `when f` sees bindings only.

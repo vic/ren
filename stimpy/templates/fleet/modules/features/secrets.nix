@@ -2,13 +2,12 @@
 {
   ren,
   inputs,
-  metal,
   ...
 }:
 {
   ren.channels.age-manifest = {
     fold = ren.lib.fold.attrs;
-    at = metal;
+    at = ren.helpers.metal;
     to = _: ren.fleet.main; # fed by the nixos collector
     into = { ... }: m: { ageManifest = m; };
   };

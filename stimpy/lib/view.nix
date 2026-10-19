@@ -6,6 +6,7 @@ stimpy: {
         "kinds"
         "classes"
         "channels"
+        "helpers"
         "aspects"
       ];
 
@@ -56,7 +57,7 @@ stimpy: {
         // {
           lib = renLib;
           inherit kinds;
-          inherit (cfg) classes channels;
+          inherit (cfg) classes channels helpers;
           aspects = lib.mapAttrs (
             a: v:
             lib.filterAttrs (k: x: !(cfg.classes ? ${k}) || x != null) v # unset class: `null` (decl-types.nix)
@@ -83,10 +84,10 @@ stimpy: {
         };
     in
     {
-      inherit mkView;
-      # QUORUM A-F3 layout; renLib arrives as module arg (kernel sets _module.args.renLib)
+      # QUORUM A-F3 layout; renLib arrives by closure, never as a module arg
       module =
-        { config, renLib, ... }:
+        renLib:
+        { config, ... }:
         {
           options.ren = lib.mkOption {
             default = { };

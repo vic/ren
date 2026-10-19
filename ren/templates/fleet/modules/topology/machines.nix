@@ -2,16 +2,14 @@
 {
   ren,
   lib,
-  settingsT,
-  opt,
-  maybe,
   ...
 }:
 let
+  inherit (ren.helpers) settingsT opt maybe;
   inherit (ren.lib) and not;
 in
 {
-  _module.args.metal = and [
+  ren.helpers.metal = and [
     ren.kinds.host
     (not ren.kinds.guest)
   ]; # physical nixos hosts

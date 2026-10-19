@@ -2,11 +2,10 @@
 {
   ren,
   inputs,
-  usersOn,
-  metal,
   ...
 }:
 let
+  inherit (ren.helpers) usersOn metal;
   inherit (ren.lib) and has;
 in
 {

@@ -66,6 +66,7 @@ stimpy: {
             kinds = kind;
             classes = t.raw;
             channels = t.raw;
+            helpers = t.raw;
             aspects = aspect config.classes;
           };
         }

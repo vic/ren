@@ -2,12 +2,10 @@
 {
   ren,
   lib,
-  usersOn,
-  metal,
-  pkgsOf,
   ...
 }:
 let
+  inherit (ren.helpers) usersOn metal pkgsOf;
   inherit (ren.lib) same;
 in
 {

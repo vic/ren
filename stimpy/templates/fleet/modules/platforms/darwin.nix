@@ -1,10 +1,10 @@
 # nix-darwin: the mac kind, the darwin class and the homeDarwin sub-class.
 {
   ren,
-  usersOn,
   ...
 }:
 let
+  inherit (ren.helpers) usersOn;
   inherit (ren.lib) and within;
 in
 {
