@@ -7,9 +7,11 @@
         path = ./templates/fleet;
         description = "Ren fleet demo";
       };
+      lib = import ./default.nix { inherit (nixpkgs) lib; };
     in
     {
-      lib = import ./default.nix { inherit (nixpkgs) lib; };
+      inherit lib;
+      flakeModules.default = lib.flakeModule;
       templates = {
         inherit fleet;
         default = fleet;
