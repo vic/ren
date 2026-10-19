@@ -48,7 +48,7 @@ ren: {
       world = p.instances // {
         lib = renLib;
         inherit (p) kinds;
-        inherit (cfg) classes channels aspects; # declared aspects only: a ref never forces inline discovery
+        inherit (cfg) classes channels aspects;
       };
     in
     p.result;
