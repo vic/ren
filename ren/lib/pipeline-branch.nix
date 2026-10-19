@@ -19,12 +19,7 @@ ren: {
         let
           m = filter (i: matches (elemAt (bs c) i) id) (lib.range 0 (length (bs c) - 1));
         in
-        if length m > 1 then
-          throw "ren: class `${c}`: more than one branch matches ${id}"
-        else if m == [ ] then
-          null
-        else
-          builtins.head m;
+        if m == [ ] then null else ren.gen.scope.folds.one "ren: class `${c}` branch at ${id}" m;
       branchAt =
         c: id:
         let
