@@ -66,6 +66,7 @@ stimpy: {
           c:
           lib.optional (c.r ? ${ch}) {
             inherit (c) id;
+            class = c.k;
             v = c.r.${ch};
           }
         ) cols

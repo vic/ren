@@ -1,4 +1,4 @@
-# Ren fleet demo — ren-v30.1 (2026-10-19) — implementation copy of ren-and-stimpy fleet.md v33
+# Ren fleet demo — ren-v30.1 (2026-10-19) — implementation copy of ren-and-stimpy fleet.md v34
 
 ## ren-v30.1 corrections (measured at gen bcbc5ca; the implementation follows this file)
 - C1 (L474): gen-scope spawned ids are `bare@parent` (build-nodes.nix:335), not `parent/child`.
@@ -103,7 +103,8 @@ That is one more than v29, because `same` comes back. `is` still covers kind sub
 - **classes**: module systems. `{ at; into; }` or a list of disjoint branches.
   - `into = { <bindings>, <channels>, outputs, ... }: ms: { … }`.
   - A returned key that names a class forwards. Any other key is a top-level option, merged by `attrs`.
-- **channels**: data. `{ fold; at; to; }`.
+- **channels**: data. `{ fold; type; at; to; }`.
+  - `type` (optional) is a module type (`lib.types.*`): each emission is checked against it when it is emitted, and a bad value is an error that names the emitter scope, the aspect and the channel; no `type` means unchecked.
   - `at` is the emitter scopes; the default is any scope.
   - `to = e: <predicate>` gives the receivers.
   - `fold` is `list` (ordered by scope path), `set`, `attrs` (recursive, conflict = error) or `one`.
@@ -315,7 +316,7 @@ ren.lib.mkFlake inputs {
     devices      = { fold = set;   at = ren.kinds.user;    to = e: and [ ren.kinds.user (when (r: same r.user e.user)) (not e) ]; };
     records      = { fold = attrs; at = ren.kinds.machine; to = _: ren.environment.prod; };
     deployment   = { fold = one;   at = metal;             to = e: e; };
-    scrape       = { fold = list;  at = ren.kinds.replica; to = _: ren.host.lb; };
+    scrape       = { fold = list;  type = t.attrsOf t.str; at = ren.kinds.replica; to = _: ren.host.lb; };
     overlays     = { fold = list;  at = ren.kinds.fleet;   to = _: ren.kinds.machine; };
     persist      = { fold = set;   at = anyOf [ ren.kinds.host ren.kinds.user ]; to = e: e.host; };
     flake-inputs = { fold = attrs; to = _: ren.fleet.main;          # no `at`: any scope emits
@@ -504,6 +505,7 @@ ren.lib.mkFlake inputs {
 | VM checks (#32): tests defined on aspects, class `checks` writes its own name | `checks.x86_64-linux.web`: a `runNixOSTest` with nodes `client`, `web` (evaluated, not run) | a check under `aarch64-linux` or `aarch64-darwin` |
 | `buildHost` (#32) | `deployment.buildHost = "10.0.1.1"` for web-2 (from JSON); `null` for lb, web-1, stage | a `buildHost` record for ci or studio (`deployment` is `at = metal`) |
 | facter (#32) | `facter` active on lb, web-1, web-2, stage | `hardware.facter.reportPath` set on a host with no `./facter/<host>.json` (the template ships none) |
+| channel `type` | lb's `scrape` pool holds r1's `{ job; target; }` (an `attrsOf str`) | a `scrape` emission with `job = 1` evaluating; a type error that does not name the emitter scope, the aspect and the channel |
 
 > VIC:
 
@@ -660,6 +662,7 @@ Sources:
 | `den.hosts.<h>.includes` dropped: #663; `include` typo silent: L14871; early shape errors: L27758, L35195, L31077 | strict kinds; a key that is not a class or channel, or lands nowhere, is an eval error |
 | `os` to systemManager: #718; finix: #662; disko: L30402; timezone for nixos+darwin: L24576 | an `os` class branch; a class per builder |
 | one aspect defined in several files, content fns included: L11448 | one aspect (or kind) in several files merges like a module option (v33): class content merges as modules; channel values and `at` must agree |
+| a schema on channel values: L30891 | a channel `type` (v34): each emission is checked when emitted; the error names the emitter scope, the aspect and the channel |
 | nix-on-droid: #517; terranix, per-host plan/apply: #115, L9418, L15871, L16194, L16263 | `droid` class; `terraform` class (env or host) |
 | custom entity kinds, k8s clusters, identities, domains: #701, L1233, L1312, L7046, L9659 | `ren.kinds.*` + a class |
 | service discovery, vhost → proxy, contributes-to, host A reacts to host B: L1241, L1891, L3626, L8626, L8666, L8718, L10555, L10638, L13153, L14353, L15580, L22851, L17277, L26453, L28072 | channels with `from`/`to` predicates; `is P x` |
@@ -703,7 +706,6 @@ Sources:
 |---|---|
 | patch an attr of a third-party aspect or its output before merge: #443, L4923, L6072 | an override form `ren.aspects.x.override = f`; `excludes` + `includes` covers only whole-aspect swaps |
 | nested aspect groups (`dev.cli.bat`) without `provides`: L5146, L5153, L5280, L6019, L19401 | a rule telling a group (no class, channel or reserved keys) from an aspect |
-| a schema on channel values: L30891 | a channel `type` key, checked at emission |
 | use Ren aspects outside Ren: #569 | `ren.lib.moduleOf aspect scope` |
 | priority by specificity (`tux@igloo` over `tux`): #686 | instance ref > kind ref, mapped to `mkOverride` |
 | option docs from the kinds: L9533 | a class that reads `ren.kinds` as data |

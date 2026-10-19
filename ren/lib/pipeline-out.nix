@@ -63,13 +63,14 @@ ren: {
         else
           e;
       emissions = lib.mapAttrs (
-        c: _:
-        map (l: {
-          path = l.id;
-          value = C.callContent (renArgs l.id) (content l.n c);
-        }) (at c)
-        ++ map (e: { inherit (e) path value; }) (
-          map (outside c) (filter (e: e.channel == c) collect.emissions)
+        c: ch:
+        map (ren.typedEmission c ch) (
+          map (l: {
+            inherit (l) n;
+            path = l.id;
+            value = C.callContent (renArgs l.id) (content l.n c);
+          }) (at c)
+          ++ map (outside c) (filter (e: e.channel == c) collect.emissions)
         )
       ) channels;
       pools = C.mkPools { inherit channels emissions receivers; } sc.order;

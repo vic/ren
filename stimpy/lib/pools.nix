@@ -12,7 +12,9 @@ stimpy: {
       inherit (lib) filter elem;
       recv =
         c: e: filter (r: pred.match ctx (channels.${c}.to st.scopes.${e.id}) st.scopes.${r}) st.order;
-      tagged = lib.mapAttrs (c: map (e: e // { rs = recv c e; })) emissions;
+      tagged = lib.mapAttrs (
+        c: map (e: stimpy.typedEmission c channels.${c} e // { rs = recv c e; })
+      ) emissions;
       poolAt = c: r: channels.${c}.fold.fold [ c r ] (map (e: e.v) (filter (e: elem r e.rs) tagged.${c}));
     in
     {
