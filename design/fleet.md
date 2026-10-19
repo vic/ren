@@ -90,7 +90,7 @@ That is one more than v29, because `same` comes back. `is` still covers kind sub
   - A kind that no `below` lists has no scopes: it is data, or abstract if it is only `is`-ed.
   - `is = K` makes the kind a subkind of K: it matches K and has K's fields. `below` and `spawns` are **not** inherited, so a subkind says what it contains (that's what rules out a guest inside a guest).
   - An instance appears at most once on a path.
-- **instances**: `ren.<kind>.<name>`.
+- **instances**: `ren.<kind>.<name>`. `ren.lib.data x` is the kind fields of instance x alone, so x can be passed as data into a module option; a field may not be named as a module key (`key`, `imports`, `config`, …) or an instance internal (`name`, `kind`, …), and the kind declaration says which.
 - **classes**: module systems. `{ at; into; }` or a list of disjoint branches.
   - `into = { <bindings>, <channels>, outputs, ... }: ms: { … }`.
   - A returned key that names a class forwards. Any other key is a top-level option, merged by `attrs`.

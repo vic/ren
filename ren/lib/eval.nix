@@ -42,6 +42,7 @@ ren: {
           ;
         # ruling: `is P x` on a scope tests P at that scope (fleet-ren.md:467); an instance needs content's `is`
         is = P: x: if (x.__ren or null) == "scope" then p.test P x.__scope else ren.is P x;
+        data = inst: removeAttrs inst ren.internals; # an instance's kind fields alone (#23)
       };
       # ruling: `ren.<kind>` exists for every declared kind (empty when it has no instances) (fleet-ren.md:95)
       world = p.instances // {

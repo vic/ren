@@ -1,6 +1,29 @@
 # instances for kinds.nix: one gen-schema registry per kind (fields, strictness, guard, id_hash),
 # plus Ren glue: name uniqueness per is-root family, and the instance mark predicates read.
 ren: {
+  # fields stamped on every instance (mkOne, gen-schema): `ren.lib.data` strips exactly these
+  internals = [
+    "__id"
+    "__kind"
+    "__ren"
+    "_identity"
+    "_identityKeys"
+    "id_hash"
+    "kind"
+    "name"
+  ];
+  # an instance is a module (view.nix), so gen-merge's module keys cannot be fields (modules.nix:1494,1517)
+  ownFields =
+    n: own:
+    let
+      inherit (ren.gen.merge.moduleSyntax) shorthandMeta structuring;
+      reserved = shorthandMeta ++ structuring ++ ren.internals;
+      bad = builtins.filter (f: builtins.elem f reserved) (builtins.attrNames own);
+    in
+    if bad != [ ] then
+      throw "ren: kind `${n}`: field `${builtins.head bad}` is reserved (${toString reserved})"
+    else
+      own;
   kindsCheck =
     { rootOf, ... }:
     {

@@ -6,7 +6,6 @@ stimpy: {
     let
       inherit (stimpy)
         lib
-        folds
         pred
         view
         ;
@@ -29,7 +28,8 @@ stimpy: {
           same
           ;
         is = pred.is ctx;
-        fold = folds;
+        inherit (stimpy) data;
+        fold = stimpy.folds;
       };
       scopesOf = map (i: st.scopes.${i});
       ctx = {
