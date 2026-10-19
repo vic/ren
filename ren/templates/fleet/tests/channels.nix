@@ -4,7 +4,7 @@ let
   ci = r.scopes.${i.ci};
 in
 {
-  # fleet.md:437: guest ci builds with its own `stable` channel while its host stage uses `edge`
+  # fleet.md:441: guest ci builds with its own `stable` channel while its host stage uses `edge`
   test-guest-ci-channel-stable = {
     expr = ci.guest.channel.name;
     expected = "stable";
