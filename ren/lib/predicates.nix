@@ -79,7 +79,7 @@ ren: {
       is =
         _: _:
         throw "ren: `is P x` with an instance needs the scope-local `is` from content args ({ is, ... }:)";
-      # fleet-ren.md `same a b`: gen-schema id_hash identity (identity.nix)
+      # fleet-ren.md `same a b`: gen-schema id_hash identity (registry entry, kinds-check.nix)
       same = a: b: a.id_hash == b.id_hash;
       inherit compile test isAt;
     };

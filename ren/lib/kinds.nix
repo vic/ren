@@ -7,12 +7,13 @@ ren: {
         "spawns"
         "is"
       ];
+      S = ren.gen.schema;
       nameOf = k: k.name;
+      asOption = fv: if fv._type or null == "option" then fv else ren.genLib.mkOption { type = fv; };
       chainOf = kinds: k: [ k ] ++ (if kinds.${k}.is == null then [ ] else chainOf kinds kinds.${k}.is);
       rootOf =
         kinds: k: lib:
         lib.last (chainOf kinds k);
-
       # decl -> { fields; guard; own } without forcing any field type
       parse =
         kinds: decl:
@@ -58,8 +59,20 @@ ren: {
                 in
                 if bad != [ ] then throw "ren: kind `${n}` spawns `${builtins.head bad}` not in below" else sp;
               is = isName;
-              fields = (if isName == null then { } else kinds.${isName}.fields) // own;
-              guard = p.guard;
+              schema = schema.${n}; # gen-schema kind: own fields, `inherits` = `is`, guard = validator
+              module = {
+                options = builtins.mapAttrs (_: asOption) own;
+                inherits = if isName == null then [ ] else [ isName ];
+                # identity = kind mark + name: hashing never forces a (lazy, maybe cyclic) field value
+                config._identity.keys = [ "name" ];
+                validators = lib.optional (p.guard != null) (
+                  S.mkValidator {
+                    name = "ren-guard-${n}";
+                    pred = p.guard.args;
+                    message = "ren: instance of kind `${n}` violates its kind guard";
+                  }
+                );
+              };
             }
             // (lib.mkOptionType {
               name = "ren-kind-${n}";
@@ -78,11 +91,9 @@ ren: {
             // {
               name = n;
             };
+          schema = S.evalSchema { } [ { config.schema = builtins.mapAttrs (_: k: k.module) kinds; } ];
         in
         kinds;
     }
-    // (ren.kindsCheck {
-      inherit chainOf rootOf;
-      idOf = ren.identity;
-    });
+    // (ren.kindsCheck { inherit chainOf rootOf; });
 }

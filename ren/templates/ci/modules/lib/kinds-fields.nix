@@ -11,7 +11,7 @@ in
 {
   kinds = {
     test-subkind-fields-transitive = {
-      expr = builtins.attrNames kinds.guest.fields;
+      expr = builtins.attrNames kinds.guest.schema.options;
       expected = [
         "addr"
         "on"
@@ -60,7 +60,7 @@ in
         }).guest.g.__id;
       expected = "machine:g";
     };
-    # fleet-ren.md `same a b`: identity is gen-schema id_hash over is-root kind + name
+    # fleet-ren.md `same a b`: identity is the gen-schema registry id_hash over kind + name
     test-same-id-hash =
       let
         two = mk {
@@ -72,12 +72,12 @@ in
         expr = [
           (ren.predicates.same two.host.a two.host.b)
           (ren.predicates.same two.host.a two.host.a)
-          (builtins.substring 0 8 two.host.a.id_hash)
+          (builtins.substring 0 5 two.host.a.id_hash)
         ];
         expected = [
           false
           true
-          "machine:"
+          "host:"
         ];
       };
   };

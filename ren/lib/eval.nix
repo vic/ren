@@ -27,10 +27,7 @@ ren: {
       p = ren.pipeline {
         inherit lib names;
         decl =
-          if unknown != [ ] then
-            throw "ren: instances of unknown kind `${builtins.head unknown}`"
-          else
-            cfg // builtins.mapAttrs (k: builtins.mapAttrs (_: view.instance lib p.kinds.${k})) insts;
+          if unknown != [ ] then throw "ren: instances of unknown kind `${builtins.head unknown}`" else cfg;
       };
       renLib = {
         inherit (ren)

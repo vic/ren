@@ -1,6 +1,6 @@
 # The fleet is a module (fleet.md:134,579): `options.ren` is the surface, `ren` = `_module.args.ren`.
 # One key = one file: kinds/classes/channels/aspects are `lazyAttrsOf raw` (a name in two files = error).
-# Instances `ren.<kind>.<name>` are deferred modules, evaluated against the kind's fields.
+# Instances `ren.<kind>.<name>` are deferred modules, evaluated by the kind's gen-schema registry (kinds-check.nix).
 ren: {
   view =
     let
@@ -33,19 +33,5 @@ ren: {
             };
           };
         };
-      # instance module -> the field values ren's mkInstances validates (kinds-check.nix)
-      instance =
-        lib: kind: m:
-        let
-          opt = fv: if fv._type or null == "option" then fv else lib.mkOption { type = fv; };
-        in
-        removeAttrs
-          (lib.evalModules {
-            modules = [
-              m
-              { options = builtins.mapAttrs (_: opt) kind.fields; }
-            ];
-          }).config
-          [ "_module" ];
     };
 }
