@@ -27,12 +27,7 @@ ren: {
         decls = lib.genAttrs names (k: decl.${k} or { });
       };
       sc = S.mkScopes { inherit kinds instances; };
-      ctx = {
-        data = id: sc.scopes.${id};
-        parent = sc.parentOf;
-        inherit (sc) children ancestors order;
-        siblings = id: lib.remove id (sc.children (sc.parentOf id));
-      };
+      ctx = P.mkCtx { inherit kinds sc; };
       classes = decl.classes or { };
       channels = decl.channels or { };
       aspects = ren.pipelineAspects decl;
