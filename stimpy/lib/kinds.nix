@@ -1,7 +1,7 @@
 stimpy: {
   # an instance is a module: nixpkgs module keys (unifyModuleSyntax), the same list as Ren's
   # (gen-merge moduleSyntax.shorthandMeta ++ structuring), plus Ren's instance internals (#22)
-  reservedFields = stimpy.lib.splitString " " "_class _file key disabledModules require imports freeformType _module __pureModule __reservedKeys __keyEq config options __id __kind __ren _identity _identityKeys id_hash kind name";
+  reservedFields = stimpy.lib.splitString " " "_class _file key disabledModules require imports freeformType _module __pureModule __reservedKeys __keyEq config options __id __kind __ren _identity _identityKeys id_hash kind name lib pkgs";
   # an instance's kind fields alone (#23): no field is reserved, so strip every reserved name
   data = inst: removeAttrs inst stimpy.reservedFields;
   kinds =

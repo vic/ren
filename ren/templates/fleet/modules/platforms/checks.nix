@@ -1,4 +1,4 @@
-# Checks: class nixosTest at each system; each content key is one nixosTest at `checks.<sys>.<name>`.
+# Checks: class checks at each system; each content key is one nixosTest at `checks.<sys>.<name>`.
 {
   ren,
   lib,
@@ -6,7 +6,7 @@
   ...
 }:
 {
-  ren.classes.nixosTest = {
+  ren.classes.checks = {
     at = ren.kinds.system;
     into =
       { system, ... }:

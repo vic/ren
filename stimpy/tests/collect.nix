@@ -61,6 +61,20 @@ in
         [ p1 ]
       ];
     };
+  # a class writing an output key equal to its own name is an output, not a forward to itself
+  test-own-name-key-is-output = {
+    expr =
+      (go
+        (ren: {
+          ren.classes.cfg.into = { ... }: _: { cfg.x = 1; };
+        })
+        (ren: {
+          a.at = ren.node.n1;
+          a.cfg = { };
+        })
+      ).outputs.cfg.x;
+    expected = 1;
+  };
   test-forward-no-target = {
     expr =
       (go (ren: {

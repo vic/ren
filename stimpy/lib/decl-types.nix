@@ -35,7 +35,11 @@ stimpy: {
         t.submodule {
           freeformType = t.lazyAttrsOf eq;
           options = {
-            below = list;
+            below = lib.mkOption {
+              type = t.listOf t.raw;
+              default = [ ];
+              apply = lib.unique;
+            };
             spawns = opt (t.lazyAttrsOf t.raw) { };
           };
         }

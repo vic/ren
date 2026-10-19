@@ -47,7 +47,7 @@ in
   # a VM test across two machines: client reaches nginx on web
   ren.aspects.web-check = {
     at = ren.system.x86_64-linux;
-    nixosTest.web = {
+    checks.web = {
       nodes.web.services.nginx.enable = true;
       nodes.web.networking.firewall.allowedTCPPorts = [ 80 ];
       nodes.client = { };

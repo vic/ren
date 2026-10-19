@@ -41,6 +41,37 @@ in
       );
       expected = false;
     };
+    # a class named like its own output key writes an output, not a forward to itself
+    test-own-name-key-is-output = {
+      expr =
+        (mk {
+          cls.checks = {
+            id = "stage";
+            into = _: _: { checks.x = 1; };
+          };
+          order = [ "stage" ];
+        }).outputs.checks;
+      expected.x = 1;
+    };
+    # negative control: another class's name still forwards, and without a branch it is refused
+    test-other-key-still-forward = {
+      expr =
+        refused
+          (mk {
+            cls = {
+              checks = {
+                id = "stage";
+                into = _: _: { nixos.x = 1; };
+              };
+              nixos = {
+                id = "nowhere";
+                into = _: _: { };
+              };
+            };
+            order = [ "stage" ];
+          }).outputs;
+      expected = false;
+    };
     test-no-target = {
       expr =
         refused

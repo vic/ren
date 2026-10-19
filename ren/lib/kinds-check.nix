@@ -11,6 +11,8 @@ ren: {
     "id_hash"
     "kind"
     "name"
+    "lib"
+    "pkgs"
   ];
   # an instance is a module (view.nix), so gen-merge's module keys cannot be fields (modules.nix:1494,1517)
   ownFields =

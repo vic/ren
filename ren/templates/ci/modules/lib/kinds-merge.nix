@@ -46,6 +46,37 @@ in
         "root:r/pin:p"
       ];
     };
+    test-below-two-files-deduped = {
+      expr =
+        (lib.evalModules {
+          modules = [
+            { options.k = lib.mkOption { type = ren.declTypes.kind; }; }
+            {
+              k.below = [
+                "a"
+                "b"
+              ];
+            }
+            {
+              k.below = [
+                "b"
+                "a"
+                "c"
+              ];
+            }
+          ];
+        }).config.k.below;
+      expected = [
+        "a"
+        "b"
+        "c"
+      ];
+    };
+    test-kind-field-pkgs-refused = {
+      expr = builtins.attrNames (two { ren.kinds.root.pkgs = lib.types.str; }).scopes;
+      expectedError.type = "ThrownError";
+      expectedError.msg = "field `pkgs` is reserved";
+    };
     # negative control: the same field with a different type is a real clash
     test-kind-two-files-field-clash = {
       expr = builtins.attrNames (two { ren.kinds.root.tag = lib.types.int; }).scopes;

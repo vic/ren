@@ -155,6 +155,10 @@ in
     expr = checks (eval [ { ren.kinds.bad.name = t.str; } ]);
     expectedError = err;
   };
+  test-reserved-field-pkgs = {
+    expr = checks (eval [ { ren.kinds.bad.pkgs = t.str; } ]);
+    expectedError = err;
+  };
   test-unknown-kind = {
     expr = (eval [ { ren.foo.x = { }; } ]).foo.x;
     expectedError = err;

@@ -1,4 +1,4 @@
-# #32: class nixosTest writes checks.<sys>.<name>; buildHost in the deployment record; facter at metal.
+# #32: class checks writes checks.<sys>.<name>; buildHost in the deployment record; facter at metal.
 { lib, r, ... }:
 let
   i = import ./_ids.nix;
