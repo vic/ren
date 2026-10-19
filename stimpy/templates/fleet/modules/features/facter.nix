@@ -1,8 +1,8 @@
 # Facter: a metal host loads its hardware report when ./facter/<host>.json exists.
-{ ren, metal, ... }:
+{ ren, ... }:
 {
   ren.aspects.facter = {
-    at = metal;
+    at = ren.helpers.metal;
     nixos =
       { host, lib, ... }:
       let

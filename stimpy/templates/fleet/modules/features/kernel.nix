@@ -2,14 +2,14 @@
 {
   ren,
   lib,
-  maybe,
   ...
 }:
 let
+  inherit (ren.helpers) maybe;
   first = lib.findFirst (v: v != null) null; # nearest non-null wins
 in
 {
-  _module.args.settingsT = lib.types.submodule {
+  ren.helpers.settingsT = lib.types.submodule {
     options.kernel.channel = maybe (
       lib.types.enum [
         "lts"

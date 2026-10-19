@@ -1,5 +1,5 @@
 # The fleet is a module (fleet.md:134,579): `options.ren` is the surface, `ren` = `_module.args.ren`.
-# classes/channels: one key = one file (`lazyAttrsOf raw`); kinds merge (decl-types.nix); `ren.aspects` = gen-aspects `aspectsType` (merges).
+# classes/channels/helpers: one key = one file (`lazyAttrsOf raw`); kinds merge (decl-types.nix); `ren.aspects` = gen-aspects `aspectsType` (merges).
 # Instances `ren.<kind>.<name>` are deferred modules, evaluated by the kind's gen-schema registry (kinds-check.nix).
 ren: {
   view =
@@ -27,6 +27,7 @@ ren: {
         "kinds"
         "classes"
         "channels"
+        "helpers"
       ];
     in
     {

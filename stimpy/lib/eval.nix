@@ -11,8 +11,8 @@ stimpy: {
         ;
       result = lib.evalModules {
         modules = [
-          view.module
-          { _module.args = { inherit renLib inputs; }; }
+          (view.module renLib)
+          { _module.args = { inherit inputs; }; }
           module
         ];
       };

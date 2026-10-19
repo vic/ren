@@ -1,10 +1,10 @@
 # home-manager: the homeManager class (four homes), the standalone home kind, and the home defaults.
 {
   ren,
-  pkgsOf,
   ...
 }:
 let
+  inherit (ren.helpers) pkgsOf;
   inherit (ren.lib) and within;
 in
 {

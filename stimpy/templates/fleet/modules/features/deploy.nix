@@ -2,10 +2,10 @@
 {
   ren,
   inputs,
-  metal,
   ...
 }:
 let
+  inherit (ren.helpers) metal;
   inherit (ren.lib.fold) set attrs one;
 in
 {

@@ -6,8 +6,7 @@ let
     ms:
     (lib.evalModules {
       modules = [
-        stimpy.view.module
-        { _module.args.renLib = { }; }
+        (stimpy.view.module { })
         {
           ren.classes.sys = { };
           ren.kinds.box.below = [ "b" ];

@@ -2,10 +2,10 @@
 {
   ren,
   lib,
-  opt,
   ...
 }:
 let
+  inherit (ren.helpers) opt;
   t = lib.types;
   inherit (ren.lib) same;
   closure =
@@ -28,7 +28,7 @@ let
   granted = s: u: lib.any (g: lib.any (same g) s.environment.grants) (closure u.groups);
 in
 {
-  _module.args.usersOn = s: lib.filterAttrs (_: granted s) ren.user;
+  ren.helpers.usersOn = s: lib.filterAttrs (_: granted s) ren.user;
 
   ren.kinds.group = {
     members = opt (t.listOf ren.kinds.group) [ ];

@@ -48,7 +48,12 @@ ren: {
       world = p.instances // {
         lib = renLib;
         inherit (p) kinds;
-        inherit (cfg) classes channels aspects;
+        inherit (cfg)
+          classes
+          channels
+          helpers
+          aspects
+          ;
       };
     in
     p.result;
