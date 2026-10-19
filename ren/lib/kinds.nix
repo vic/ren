@@ -10,7 +10,7 @@ ren: {
       S = ren.gen.schema;
       nameOf = k: k.name;
       asOption = fv: if fv._type or null == "option" then fv else ren.genLib.mkOption { type = fv; };
-      chainOf = kinds: k: [ k ] ++ (if kinds.${k}.is == null then [ ] else chainOf kinds kinds.${k}.is);
+      chainOf = kinds: k: [ k ] ++ ren.gen.graph.ancestorsOf { parent = k: kinds.${k}.is; } k;
       rootOf =
         kinds: k: lib:
         lib.last (chainOf kinds k);
