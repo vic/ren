@@ -44,12 +44,12 @@ ren: {
             let
               p = parse kinds decl;
               isName = if p.body ? is then nameOf p.body.is else null;
-              own = p.argFields // removeAttrs p.body reserved;
+              own = ren.ownFields n (p.argFields // removeAttrs p.body reserved);
             in
             {
               __ren = "kind";
               name = n;
-              below = map nameOf (p.body.below or [ ]);
+              below = builtins.seq own (map nameOf (p.body.below or [ ])); # scopes read every kind's below
               spawns =
                 let
                   sp = p.body.spawns or { };

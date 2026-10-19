@@ -1,19 +1,14 @@
 stimpy: {
+  # an instance is a module: nixpkgs module keys (unifyModuleSyntax), the same list as Ren's
+  # (gen-merge moduleSyntax.shorthandMeta ++ structuring), plus Ren's instance internals (#22)
+  reservedFields = stimpy.lib.splitString " " "_class _file key disabledModules require imports freeformType _module __pureModule __reservedKeys __keyEq config options __id __kind __ren _identity _identityKeys id_hash kind name";
+  # an instance's kind fields alone (#23): no field is reserved, so strip every reserved name
+  data = inst: removeAttrs inst stimpy.reservedFields;
   kinds =
     cfg: kinds:
     let
       inherit (stimpy) lib;
-      # QUORUM A-F4: module-system names + instance `name`
-      reserved = [
-        "config"
-        "options"
-        "imports"
-        "_file"
-        "key"
-        "disabledModules"
-        "freeformType"
-        "name"
-      ];
+      reserved = stimpy.reservedFields;
       kindKeys = [
         "below"
         "spawns"
@@ -35,7 +30,7 @@ stimpy: {
           bad = lib.intersectLists reserved (lib.attrNames own);
         in
         if bad != [ ] then
-          throw "ren: kind ${K}: reserved field names ${toString bad}"
+          throw "ren: kind `${K}`: field `${lib.head bad}` is reserved (${toString reserved})"
         else
           {
             inherit body own;
