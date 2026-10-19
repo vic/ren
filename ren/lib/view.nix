@@ -1,5 +1,5 @@
 # The fleet is a module (fleet.md:134,579): `options.ren` is the surface, `ren` = `_module.args.ren`.
-# kinds/classes/channels: one key = one file (`lazyAttrsOf raw`); `ren.aspects` = gen-aspects `aspectsType` (merges).
+# classes/channels: one key = one file (`lazyAttrsOf raw`); kinds merge (decl-types.nix); `ren.aspects` = gen-aspects `aspectsType` (merges).
 # Instances `ren.<kind>.<name>` are deferred modules, evaluated by the kind's gen-schema registry (kinds-check.nix).
 ren: {
   view =
@@ -22,7 +22,10 @@ ren: {
             __ren = facet t.raw "aspect";
           };
         # an authored `name` outranks the type's default name (priority 1500)
-        aspectModules = [ ({ options, ... }: { meta.named = options.name.highestPrio < 1500; }) ];
+        aspectModules = [
+          ({ options, ... }: { meta.named = options.name.highestPrio < 1500; })
+          (ren.declTypes.bareClass decl.classes)
+        ];
       };
       declared = [
         "kinds"
@@ -55,7 +58,7 @@ ren: {
               includes = imap0 (
                 i: b: if isRef b then b else norm (if b.meta.named then b.name else "${name}/${toString i}") b
               ) e.includes;
-              content = filterAttrs (authored name e) e;
+              content = if e.meta.bare then ren.content.bare else filterAttrs (authored name e) e;
             };
           below = a: builtins.concatMap (b: [ b ] ++ below b) (builtins.filter (b: !isRef b) a.includes);
           top = builtins.mapAttrs norm decl.aspects;
@@ -79,6 +82,7 @@ ren: {
               {
                 freeformType = t.lazyAttrsOf (t.lazyAttrsOf t.deferredModule);
                 options = lib.genAttrs declared (_: opt (t.lazyAttrsOf t.raw)) // {
+                  kinds = opt (t.lazyAttrsOf ren.declTypes.kind);
                   aspects = opt (gen.aspects.aspectsType (cnf config));
                 };
               }

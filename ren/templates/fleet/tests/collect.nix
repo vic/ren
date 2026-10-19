@@ -118,6 +118,17 @@ in
     expr = names r.outputs.terraformConfigurations;
     expected = [ "dns" ];
   };
+  # row: one aspect in several files - base's `os` (machines.nix) and `records` (dns.nix) merge
+  test-base-merged-across-files = {
+    expr = [
+      (names (lib.filterAttrs (_: l: has l "base") r.landed.os))
+      (sorted r.emitted.records)
+    ];
+    expected = [
+      (sorted i.machines)
+      (sorted i.machines)
+    ];
+  };
   # the output name is fixed, so only `landed` shows that staging (edge = false) writes no dns
   test-landed-terraform-prod-only = {
     expr = names r.landed.terraform;
