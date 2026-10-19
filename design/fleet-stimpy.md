@@ -1,4 +1,4 @@
-# Ren fleet demo — v31 (2026-10-19) — EXPLORATION: reduced surface (genie v29.A adopted)
+# Ren fleet demo — v32 (2026-10-19) — EXPLORATION: reduced surface (genie v29.A adopted)
 
 v29.A = genie's fork of vic's v29 (gist `fbc69bfc`). It keeps v29's reduction and fixes the places where a rename to a Gen term inverted or overloaded that term. v29 explores how far the surface can shrink. **The previous version is backed up as `vic/fleet-v28.md`**, and we may revert to it. v29 renames words to Gen's own terms only where Gen means the same thing. It merges words that did the same job, and makes the rest relate to each other. Design only; nothing implements it. Feedback goes after `> VIC:` lines.
 
@@ -298,7 +298,7 @@ ren.lib.mkFlake inputs {
     persist      = { fold = set;   at = anyOf [ ren.kinds.host (and [ ren.kinds.user (within ren.kinds.host) ]) ]; to = e: e.host; };   # STIMPY-C1
     flake-inputs = { fold = attrs; to = _: ren.fleet.main;          # no `at`: any scope emits
                      into = { ... }: inputs': { flake-file.inputs = inputs'; }; };
-    meta         = { fold = set;   to = e: e; };
+    tags         = { fold = set;   to = e: e; };
 
     # channels with `into`: data collectors (not module systems, so not classes)
     packages     = { fold = attrs; at = ren.kinds.system; to = e: e;
@@ -320,7 +320,7 @@ ren.lib.mkFlake inputs {
     };
     deploy-record = {
       at         = metal;
-      deployment = { host, meta, ... }: { address = host.addr; user = "deploy"; tags = meta; };
+      deployment = { host, tags, ... }: { address = host.addr; user = "deploy"; inherit tags; };
     };
 
     hm-module = {                                                   # bundle: each key lands where its class lives
@@ -406,7 +406,7 @@ ren.lib.mkFlake inputs {
 
     # ── included only ──
     nginx = { nixos.services.nginx.enable = true;
-              meta     = { ... }: "web";
+              tags     = { ... }: "web";
               backends = { host, ... }: host.addr;
               persist  = { ... }: "/var/lib/nginx"; };
     haproxy.nixos = { backends, lib, ... }: { services.haproxy.enable = true;
@@ -453,7 +453,7 @@ ren.lib.mkFlake inputs {
 | output merge | — | two scopes writing different `nixosConfigurations.lb` evaluating |
 | content-function rule | — | a bare `final: prev:` emission evaluating as content |
 | hmPlatforms (`homeDarwin`) | aerospace in alice's and bob's homes on studio only | aerospace in any linux, phone or standalone home |
-| meta = emission | colmena tags for stage include `web` (nginx emits it) | a `meta` key reserved by Ren |
+| tags = emission | colmena tags for stage include `web` (nginx emits it) | a `tags` key reserved by Ren |
 | flake-file | `flake-file.inputs.{agenix,microvm}` written once, a top-level option beside `nixosConfigurations` | an input listed by an aspect that is not active; two aspects giving `agenix` different urls evaluating |
 | recursive `attrs` | `deploy.nodes.{lb,web-1,web-2,stage}` and `colmena.{…}` merged from four host scopes; `agenix = { url; inputs.nixpkgs.follows; }` from two aspects that agree on `url` | a conflict error between hosts for the top-level `deploy` key |
 | `anywhere` | a `flake-inputs` emission from an aspect `at = ren.fleet.main` reaches `flake-file.inputs` | root-scope emissions dropped because `within` excludes the root |
@@ -617,7 +617,7 @@ Sources:
 | user content must not change the shared host: #694; host app → all users vs user app → one user: L535, L4888, L5655, L29994 | no provides-to; content lands only in the aspect's own scopes; `within` / `has` |
 | host↔user both ways, opt-in: #450, L1110, L1857, L5676, L6802, L7509, L18917, L18929, L25830, L25875, L27963, L28063 | predicates: `within`, `has` (`ssh-agent`, `docker`, `htop`) |
 | hmLinux / hmDarwin / hmAarch64 forwards: L26816, L34138, L34189, L34191 | a sub-class forwarding in place (`homeDarwin`) |
-| aspect metadata, tags: L5141, L28728, L28734, L28835 | `meta` is just an emission (fold `set`); `deployment.tags = meta` |
+| aspect metadata, tags: L5141, L28728, L28734, L28835 | `tags` is just an emission (fold `set`); `deployment.tags = tags` (not `meta`: gen-aspects reserves it) |
 | `den.hosts.<h>.includes` dropped: #663; `include` typo silent: L14871; early shape errors: L27758, L35195, L31077 | strict kinds; a key that is not a class or channel, or lands nowhere, is an eval error |
 | `os` to systemManager: #718; finix: #662; disko: L30402; timezone for nixos+darwin: L24576 | an `os` class branch; a class per builder |
 | nix-on-droid: #517; terranix, per-host plan/apply: #115, L9418, L15871, L16194, L16263 | `droid` class; `terraform` class (env or host) |

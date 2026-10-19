@@ -14,7 +14,7 @@ in
     at = metal;
     to = e: e;
   };
-  ren.channels.meta = {
+  ren.channels.tags = {
     fold = set;
     to = e: e;
   };
@@ -32,10 +32,10 @@ in
 
   ren.aspects.deploy-record = {
     at = metal;
-    deployment = { host, meta, ... }: {
+    deployment = { host, tags, ... }: {
       address = host.addr;
       user = "deploy";
-      tags = meta;
+      inherit tags;
     };
   };
 }
