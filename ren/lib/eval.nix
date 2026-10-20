@@ -29,7 +29,7 @@ ren: {
         decl =
           if unknown != [ ] then throw "ren: instances of unknown kind `${builtins.head unknown}`" else cfg;
       };
-      renLib = {
+      renLib = ren.optLib // {
         inherit (ren)
           and
           anyOf

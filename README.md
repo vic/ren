@@ -110,7 +110,6 @@ All entry points are in the [specification](#entry-points).
 
 ```
 modules/
-  helpers.nix
   topology/   fleet, environments, machines, access, channel
   platforms/  nixos, darwin, droid, home-manager, microvm, os, checks
   hosts/      lb, inventory (web-1, web-2), web-2, stage, ci, studio, pixel
@@ -313,6 +312,7 @@ Two words have two meanings. Both are tracked in [#68](https://github.com/vic/re
 ### helpers
 
 - `ren.helpers.<name>` is a value that several fleet files share (`lazyAttrsOf raw`: one name, one file). It can be a predicate, a function or a type.
+- `ren.lib.opt t d` is `mkOption { type = t; default = d; }`, and `ren.lib.maybe t` is `opt (nullOr t) null`. Kind files use them for fields with defaults.
 - The fleet adds exactly two module args, `ren` and `inputs`. A shared helper never goes in `_module.args`. A helper for one file is a private `let`.
 
 </details>
@@ -345,7 +345,7 @@ Each entry says what the file shows and which rule it exercises. Links point at 
 
 ### topology
 
-- [helpers.nix](ren/templates/fleet/modules/helpers.nix#L3-L8): `opt` and `maybe`, published as [`ren.helpers`](#helpers).
+- `opt` and `maybe` (kind field types) are part of Ren: `ren.lib.opt`, `ren.lib.maybe` (see [helpers](#helpers)).
 - [topology/fleet.nix](ren/templates/fleet/modules/topology/fleet.nix#L6-L19): the root kind `fleet`. It is a root kind because its `below` is not empty. `spawns` defaults to every instance. `system` scopes carry per-system outputs.
 - [topology/environments.nix](ren/templates/fleet/modules/topology/environments.nix#L11-L29): parent-side `spawns`. `inEnv` uses `same` before any scope exists (stratum 0). [L31-L42](ren/templates/fleet/modules/topology/environments.nix#L31-L42): `staging` inherits the settings of `prod` through a ref field.
 - [topology/machines.nix](ren/templates/fleet/modules/topology/machines.nix#L12-L25): the predicate helper `metal` and the abstract kind `machine` (no `below` lists it). [L27-L33](ren/templates/fleet/modules/topology/machines.nix#L27-L33): `base` reads the `overlays` pool as a content arg.
@@ -462,7 +462,7 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 | channel `type` | lb's `scrape` pool holds r1's `{ job; target; }` | a bad emission; an error without scope, aspect and channel | T [typed-scrape-good-emission-passes](ren/templates/fleet/tests/types.nix#L24), [typed-scrape-nested-bad-field-refused](ren/templates/fleet/tests/types.nix#L34) |
 | diamond | nginx reached through `web` and `status` lands once on web-1 and stage; lb's haproxy names web-1 once | nginx's content twice in one scope; web-1 twice in a list fold or in haproxy's config | T [diamond](ren/templates/fleet/tests/diamond.nix), E [diamond](ren/templates/fleet/tests-e2e/diamond.nix) |
 | merge across files | `base` with keys from two files | — | T [base-merged-across-files](ren/templates/fleet/tests/collect.nix#L122) |
-| helpers | every shared helper in `ren.helpers` | a helper in `_module.args` | T [helpers-in-ren-helpers](ren/templates/fleet/tests/helpers.nix#L33), [helpers-not-module-args](ren/templates/fleet/tests/helpers.nix#L38) |
+| helpers | every shared helper in `ren.helpers` | a helper in `_module.args` | T [helpers-in-ren-helpers](ren/templates/fleet/tests/helpers.nix#L33), [helpers-not-module-args](ren/templates/fleet/tests/helpers.nix#L38), [opt-maybe-in-ren-lib](ren/templates/fleet/tests/helpers.nix#L43) |
 | instances as data | `ren.lib.data x` in a module option | a field named `key`, or an internal | T [data-into-option](ren/templates/fleet/tests/data.nix#L59), [field-key-refused](ren/templates/fleet/tests/data.nix#L55) |
 | inline include | a ref include lands | an inline aspect in `includes` | T [error-inline-include](ren/templates/fleet/tests/errors.nix#L106) |
 | class `lib` | `lib.hm` in home-manager content | Ren's `lib` in class content | E [class-content-sees-class-lib](ren/templates/fleet/tests-e2e/class-lib.nix#L24) |

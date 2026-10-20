@@ -6,7 +6,7 @@
   ...
 }:
 let
-  inherit (ren.helpers) opt;
+  inherit (ren.lib) opt;
   t = lib.types;
 in
 {

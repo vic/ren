@@ -5,9 +5,9 @@
   ...
 }:
 let
-  inherit (ren.helpers) opt maybe settingsT;
+  inherit (ren.helpers) settingsT;
   t = lib.types;
-  inherit (ren.lib) same;
+  inherit (ren.lib) same opt maybe;
   inEnv = xs: s: lib.filterAttrs (_: x: same x.environment s.environment) xs;
 in
 {

@@ -5,8 +5,13 @@
   ...
 }:
 let
-  inherit (ren.helpers) settingsT opt maybe;
-  inherit (ren.lib) and not;
+  inherit (ren.helpers) settingsT;
+  inherit (ren.lib)
+    and
+    not
+    opt
+    maybe
+    ;
 in
 {
   ren.helpers.metal = and [

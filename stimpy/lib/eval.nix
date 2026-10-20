@@ -17,7 +17,7 @@ stimpy: {
         ];
       };
       ren = result._module.args.ren;
-      renLib = {
+      renLib = stimpy.optLib // {
         inherit (pred)
           and
           anyOf

@@ -5,7 +5,7 @@
   ...
 }:
 let
-  inherit (ren.helpers) maybe;
+  inherit (ren.lib) maybe;
   first = lib.findFirst (v: v != null) null; # nearest non-null wins
 in
 {

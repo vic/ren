@@ -5,9 +5,8 @@
   ...
 }:
 let
-  inherit (ren.helpers) opt;
   t = lib.types;
-  inherit (ren.lib) same;
+  inherit (ren.lib) same opt;
   closure =
     gs:
     map (x: x.g) (

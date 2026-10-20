@@ -51,7 +51,7 @@ ren: {
                 map (n: m.${n}) (attrNames m)
               ) (below k);
 
-          mkNode = ren.scopesNode isChain;
+          mkNode = ren.scopesNode isChain (k: kinds.${k}.args or [ ]);
 
           spawn =
             i: self: pid:
