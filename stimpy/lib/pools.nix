@@ -10,8 +10,12 @@ stimpy: {
     let
       inherit (stimpy) lib pred;
       inherit (lib) filter elem;
-      recv =
-        c: e: filter (r: pred.match ctx (channels.${c}.to st.scopes.${e.id}) st.scopes.${r}) st.order;
+      # receivers per (channel, emitter scope), shared by that scope's emissions
+      recvT = lib.mapAttrs (
+        c: ch:
+        lib.genAttrs st.order (e: filter (r: pred.match ctx (ch.to st.scopes.${e}) st.scopes.${r}) st.order)
+      ) channels;
+      recv = c: e: recvT.${c}.${e.id};
       tagged = lib.mapAttrs (
         c: map (e: stimpy.typedEmission c channels.${c} e // { rs = recv c e; })
       ) emissions;

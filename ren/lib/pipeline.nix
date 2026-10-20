@@ -37,7 +37,10 @@ ren: {
       matches = b: id: (b.at or null) == null || test b.at id;
       inherit (ren.pipelineBranch (args // { inherit matches; })) branchAt branchIx;
       # receivers c e = scopes matching `to e`, e = the emitter's scope (README.md#aspects)
-      receivers = c: e: filter (test (channels.${c}.to sc.scopes.${e.path})) sc.order;
+      recvT = builtins.mapAttrs (
+        c: ch: lib.genAttrs sc.order (e: filter (test (ch.to sc.scopes.${e})) sc.order)
+      ) channels;
+      receivers = c: e: recvT.${c}.${e.path};
       # ruling: content's `is P x` tests x's scope on the current path (README.md#predicates), so it is bound per scope id
       renArgs = ren.pipelineArgs {
         inherit
