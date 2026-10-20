@@ -5,9 +5,11 @@
 > Usage examples: [Fleet Template](ren/templates/fleet/modules) - [vic/vix](https://github.com/vic/vix/tree/ren)
 
 Ren is a small surface language for aspect-oriented, context-driven Nix fleets.
-[vic](https://github.com/vic) designed it. [Den](https://github.com/denful/den) inspired it.
-If you know Den, you know the ideas. Ren gives them a smaller grammar.
+You declare your own domain (kinds and instances), and Ren puts each piece of configuration at the correct place in it.
+[vic](https://github.com/vic) designed Ren and [Den](https://github.com/denful/den) inspired it: if you know Den, you know the ideas, and Ren gives them a smaller grammar.
+
 This README is the design. The [fleet template](ren/templates/fleet) is its executable example.
+The top part is a short tour. The [specification](#specification) and the reference parts are collapsed below it.
 
 ## what-ren-and-stimpy-are
 
@@ -23,7 +25,64 @@ A difference between them must come from the library, never from the fleet.
 - Ren knows nothing about hosts, users or NixOS. You declare your own domain. Ren wires it together.
   All kind names below (`environment`, `host`, `mac`) belong to the template, not to Ren.
 
-### usage
+## concepts
+
+Ren has few concepts. Each one has a full rule set in the [specification](#specification).
+
+- **Kinds and instances**: a kind is a typed record (`ren.kinds.host`). An instance is one value of a kind (`ren.host.lb`).
+- **Scopes**: a scope is one instance at one place in the scope tree. `below` and `spawns` make the tree.
+- **Classes**: a class is a module system (`nixos`, `homeManager`). Its `into` turns the modules of a scope into outputs or forwards them.
+- **Channels**: a channel moves data between scopes. Emitters write into it, and each receiver gets a folded pool.
+- **Aspects**: an aspect is one concern. It holds class content and channel emissions. `at`, `includes` and `excludes` activate it.
+- **Predicates**: a predicate selects scopes (`and`, `anyOf`, `not`, `when`, `within`, `has`, `is`, `same`).
+- **Folds**: a fold says how a channel combines its emissions (`list`, `set`, `attrs`, `one`).
+
+## flow
+
+```mermaid
+flowchart LR
+  D["declarations<br/>kinds, instances, aspects,<br/>classes, channels"] --> T["scope tree<br/>below + spawns"]
+  T --> A["activation<br/>at, includes, excludes"]
+  A --> C["class content<br/>modules per scope"]
+  A --> P["channel pools<br/>folded emissions"]
+  P --> C
+  C --> F["forwards<br/>class to class"]
+  F --> O["outputs<br/>nixosConfigurations, packages, ..."]
+  P --> O
+```
+
+Each step reads only the steps before it. The [evaluation order](#evaluation-order) gives the exact strata.
+
+## example
+
+One root kind, one host, one class and one aspect. The full fleet is the [template](ren/templates/fleet/modules).
+
+```nix
+{ ren, lib, inputs, ... }:
+{
+  ren.kinds.fleet.below = [ ren.kinds.host ]; # root kind: hosts are its children
+  ren.kinds.host.addr = lib.types.str; # a typed field; no default = required
+  ren.fleet.main = { };
+  ren.host.lb.addr = "10.0.1.1"; # an instance; one scope: fleet:main/host:lb
+  ren.classes.nixos = {
+    at = ren.kinds.host; # one nixos module system per host scope
+    into = { host, ... }: ms: {
+      nixosConfigurations.${host.name} = inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = ms;
+      };
+    };
+  };
+  ren.aspects.motd = {
+    at = ren.kinds.host; # a predicate: the scopes where the aspect is active
+    nixos.environment.etc.motd.text = "managed by ren";
+  };
+}
+```
+
+## usage
+
+Flakes:
 
 ```nix
 outputs = inputs: inputs.ren.lib.mkFlake inputs (inputs.import-tree ./modules);
@@ -31,6 +90,10 @@ outputs = inputs: inputs.ren.lib.mkFlake inputs (inputs.import-tree ./modules);
 
 Stimpy uses the same line with `inputs.stimpy`. Put one concern (aspect) in each file.
 Directory names are for humans. Evaluation never reads paths. Paths with `/_` are not loaded.
+
+No flakes: `(import ren-src { }).mkFlake inputs module`, with locked `inputs`.
+flake-parts: import `inputs.ren.flakeModules.default` and set the option `fleet = inputs.import-tree ./modules;`.
+All entry points are in the [specification](#entry-points).
 
 ```
 modules/
@@ -41,6 +104,24 @@ modules/
   users/      alice, bob
   features/   web, deploy, dns, sync, kernel, monitoring, ...
 ```
+
+## status-and-testing
+
+Run all checks at the repository root:
+
+```
+nix-shell -p just --run 'just ci'
+```
+
+- `just twin` checks that both templates are the same tree: `diff -r --exclude=flake.nix --exclude=flake.lock ren/templates/fleet stimpy/templates/fleet`.
+- `just ren` and `just stimpy` run one implementation: its `just ci` (treefmt check + nix-unit) and its `just e2e` (realized configs from the template `flake.lock`).
+- The template tests are the same for both. The lib suites differ: [ren/templates/ci](ren/templates/ci/modules/lib), [stimpy/tests](stimpy/tests).
+- In your own fleet, `evalFleet inputs module` returns the RESULT for tests. See [entry points](#entry-points).
+
+## specification
+
+<details>
+<summary><b>Vocabulary</b>: the 22 reserved words</summary>
 
 ## vocabulary
 
@@ -54,6 +135,11 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 | bindings | `parent outputs` |
 
 `at` means "which scopes" on every noun. A kind, instance or aspect ref is also a predicate.
+
+</details>
+
+<details>
+<summary><b>Kinds</b>: typed data, child kinds, subkinds</summary>
 
 ### kinds
 
@@ -69,6 +155,11 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - One kind in several files merges: `below` concatenates (no duplicates), `spawns` merges by child, fields must agree.
 - A field must not have the name of a module key (`key`, `imports`, `config`, …), an instance internal (`name`, `kind`, …), `lib` or `pkgs`.
 
+</details>
+
+<details>
+<summary><b>Scopes</b>: instances at places in the tree</summary>
+
 ### scopes
 
 - A scope is one instance at one place in the tree. One instance can have many scopes (alice has eight).
@@ -76,12 +167,22 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - A scope binds each instance on its path under its kind name and every superkind name (through `is`). The nearest one wins: at `ci`, `host` is ci.
 - A scope also binds `parent`, the arg fields of a function kind, and every channel pool it receives.
 
+</details>
+
+<details>
+<summary><b>Instances</b>: names, refs, data</summary>
+
 ### instances
 
 - An instance is `ren.<kind>.<name>`. A name is unique across a kind family: `ren.host.ci` and `ren.guest.ci` together are an error.
 - A ref field takes a ref, never a string. `environment = "prod"` is refused.
 - `ren.lib.data x` gives the kind fields of x alone, so x can go into a module option.
 - `ren.<kind>` exists for every declared kind. It is empty when the kind has no instances.
+
+</details>
+
+<details>
+<summary><b>Classes</b>: module systems, <code>into</code>, forwards</summary>
 
 ### classes
 
@@ -93,8 +194,17 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - The class's own name, and any other key, is a top-level output. Outputs merge by the `attrs` law.
 - Forwards chain (class to class to class). A forward cycle is an error.
 - Class content gets the `lib` of its own module system (for example `lib.hm` in home-manager), not Ren's.
-- `ms` are modules (`{ imports = [ fn ]; _file; }`). An `into` that writes into a config-only submodule (`users.users.<n>`) uses `ren.lib.flatten args ms`: it calls each content function with `args` (the module args of the module that holds the write; name `pkgs` there if content needs it), drops `imports`/`_file`/`key`, and returns one `mkMerge` value (#59).
+- `ms` are modules (`{ imports = [ fn ]; _file; }`).
+- An `into` that writes into a config-only submodule (`users.users.<n>`) uses `ren.lib.flatten args ms` (#59). `flatten` does three things:
+  - It calls each content function with `args`. `args` are the module args of the module that holds the write. If content needs `pkgs`, name `pkgs` there.
+  - It drops `imports`, `_file` and `key`.
+  - It returns one `mkMerge` value.
 - Class names and channel names are disjoint.
+
+</details>
+
+<details>
+<summary><b>Channels</b>: emitters, receivers, pools</summary>
 
 ### channels
 
@@ -105,12 +215,19 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - `into = { <bindings>, ... }: pool: { … }` runs once per receiving scope with at least one emission.
 - An `into` key that names a class forwards as class content, like a class forward. A key that names another channel is an error that names both channels. Any other key is a top-level output.
 
+</details>
+
+<details>
+<summary><b>Aspects</b>: activation, includes, content</summary>
+
 ### aspects
 
 - An aspect is a unit of configuration. `at` activates it. An aspect without `at` fires only where it is included.
 - `includes` and `excludes` take refs to declared aspects only. An inline aspect or a string is an error.
 - `includes` and `excludes` work in the aspect's scopes and their subtrees. `excludes` wins over `includes`.
-- An aspect reached by several include paths (a diamond), or by includes and its own `at`, lands once per scope. Identity is the declared path (gen-aspects `key`, one `id_hash`): an include is a reference, never a copy. So a host and its N users that all include one aspect give that aspect once on the host and once per user.
+- An aspect lands once per scope. This is also true when several include paths reach it (a diamond), or when includes and its own `at` reach it.
+- The identity of an aspect is its declared path (gen-aspects `key`, one `id_hash`). An include is a reference, never a copy.
+- Example: a host and its N users all include one aspect. The aspect lands once on the host and once per user.
 - A key that names a class is config. A key that names a channel is an emission. Any other key is an error.
 - A key of an active aspect that lands in none of its scopes is an error.
 - One aspect in several files merges like a module option: class content merges as modules, `includes`/`excludes` concatenate, `at` and channel values must agree.
@@ -119,6 +236,11 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - A binding or pool name that clashes with a module arg is an error.
 - Content never reads realized config. Only `into` reads it, through `outputs`.
 - A check of realized config is a class `into` that reads `outputs` of a class it does not forward into, and forwards a derivation into `checks.drvs` (#60).
+
+</details>
+
+<details>
+<summary><b>Predicates</b>: how to select scopes</summary>
 
 ### predicates
 
@@ -133,6 +255,11 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - `upTo K e` is `and [ K (anyOf [ e (has e) ]) ]`: e itself if it is a K, and the K that e is a child of. A guest in a host gives both (#58).
 - Aspect refs are stratified. A cycle through `not` or `excludes` is an error ("not stratified").
 
+</details>
+
+<details>
+<summary><b>Folds</b>: how a channel combines emissions</summary>
+
 ### folds
 
 - `list`: in scope-path order, never in attribute or include order.
@@ -140,10 +267,20 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - `attrs`: recursive merge. Equal leaves merge. Different leaves are an error.
 - `one`: exactly one emission. Zero or two is an error.
 
+</details>
+
+<details>
+<summary><b>Helpers</b>: values that fleet files share</summary>
+
 ### helpers
 
 - `ren.helpers.<name>` is a value that several fleet files share (`lazyAttrsOf raw`: one name, one file). It can be a predicate, a function or a type.
 - The fleet adds exactly two module args, `ren` and `inputs`. A shared helper never goes in `_module.args`. A helper for one file is a private `let`.
+
+</details>
+
+<details>
+<summary><b>Entry points</b>: flakes, no flakes, flake-parts, tests, RESULT</summary>
 
 ### entry-points
 
@@ -154,6 +291,15 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - Tests: `evalFleet inputs module` returns `scopes active landed pools emitted branches outputs forwarded channels forwards` in both twins. `channels` is `name -> { emitters = [ id ]; receivers = emitter -> [ id ]; }`. `forwards` is `[ { class; from; to; } ]` (class forwards and channel `into` forwards).
 - Inside the fleet: `ren.lib.result` is the same RESULT without `outputs`. It is lazy and read-only. Read it in an `into` (stratum 3). Deciding kinds, activation or `at` from it is a cycle: a Nix eval error, never a wrong value.
 - Ren only: `ren.lib.inspect` is a gen-inspect inspector over the scope graph (edges `child`, `<class>`, `<channel>`): `.render.mermaid`, `.query`, `.select`, `.why`. The template never uses it (#51: mermaid handles keep `/`).
+
+</details>
+
+## reference
+
+The fleet walkthrough and the reference tables.
+
+<details>
+<summary><b>Fleet walkthrough</b>: each template file and the rule it shows</summary>
 
 ## fleet-walkthrough
 
@@ -225,6 +371,11 @@ to = e: e.host;
 - [features/ssh-agent.nix](ren/templates/fleet/modules/features/ssh-agent.nix#L5-L8): `within machine` keeps it out of standalone homes.
 - [features/facter.nix](ren/templates/fleet/modules/features/facter.nix#L4-L12): config gated on a file that exists.
 
+</details>
+
+<details>
+<summary><b>Evaluation order</b>: the four strata</summary>
+
 ## evaluation-order
 
 | stratum | computes | reads | a cycle inside it is |
@@ -236,6 +387,11 @@ to = e: e.host;
 
 Stratum 3 edges: a K branch returns channel key c (K to c) or class key K' (K to K'). A channel `into` returns class key K (c to K).
 Keys are probed without forcing `ms`, the pool or `outputs`. The error names the cycle: ``ren: stratum 3 cycle: class `K` -> channel `c` -> class `K` ``.
+
+</details>
+
+<details>
+<summary><b>Expected results</b>: what must and must not appear, with tests</summary>
 
 ## expected-results
 
@@ -295,6 +451,11 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 | `upTo` (#58) | a user on stage reaches stage; stage reaches itself; ci reaches ci and stage | a user's host for its sibling host | T [upTo-machine](ren/templates/fleet/tests/nearest.nix), L [Ren](ren/templates/ci/modules/lib/predicates-nearest.nix), [Stimpy](stimpy/tests/nearest.nix) |
 | `flatten` (#59) | an `account` class writes `users.users.alice` on lb: content fn with the class `lib` plus a plain value | "The option `users.users.alice.imports' does not exist" | E [flatten](ren/templates/fleet/tests-e2e/flatten.nix), L [Ren](ren/templates/ci/modules/lib/flatten.nix), [Stimpy](stimpy/tests/flatten.nix) |
 
+</details>
+
+<details>
+<summary><b>Gen mapping</b>: which Gen part each Ren construct uses</summary>
+
 ## gen-mapping
 
 What `ren/lib` calls today (`grep -rho 'gen\.[a-z]*' ren/lib`). Stimpy calls no Gen code.
@@ -316,6 +477,11 @@ What `ren/lib` calls today (`grep -rho 'gen\.[a-z]*' ren/lib`). Stimpy calls no 
 | classes, forwards, channel `into` | gen-delivery not called | gap ([#6](https://github.com/vic/ren/issues/6)) |
 | `lib` without nixpkgs | gen-prelude, gen-merge; `lib/gen-lib.nix` shims seven helpers | gap ([sini/gen-prelude#1](https://github.com/sini/gen-prelude/issues/1)) |
 | importing Gen | `import gen { }` | about 20s of the test run ([sini/gen#2](https://github.com/sini/gen/issues/2)) |
+
+</details>
+
+<details>
+<summary><b>Den coverage</b>: every Den pattern and its Ren form</summary>
 
 ## den-coverage
 
@@ -375,6 +541,11 @@ Every user-facing pattern in Den's docs, templates, CI tests, issues and Matrix 
 | host users declared inside an aspect | existence is `spawns`, stratum 0 | refused |
 | real-host config from a standalone home | a home has no host scope | refused |
 
+</details>
+
+<details>
+<summary><b>Diamond safety</b>: why an aspect lands once per scope</summary>
+
 ## diamond-safety
 
 Den's hardest bug was the diamond. [drupol's review](https://not-a-number.io/2026/evaluating-den-a-dendritic-configuration-framework/) shows the shape, and the [follow-up](https://not-a-number.io/2026/den-framework-follow-up-issue-fixed/) explains the fix (den#468). In the shape, a host has users alice and bob. A mixed aspect `base` (`nixos` + `homeManager`) goes to both users, and each user forwards its `nixos` part back to the one host. The host then gets the same `nixos` content once per user: `boot.kernelPackages is defined multiple times while it's expected to be unique`. Den fixed it with a `<class>@<identity>` dedup key, and anonymous aspects stay outside that fix.
@@ -387,9 +558,15 @@ Ren and Stimpy are safe by construction. No dedup pass is needed:
 - **The den#468 shape is measured, not argued.** An aspect active at every user of `stage` lands its `nixos` content once on stage and never at a user scope ([`test-diamond-host-and-users`](ren/templates/fleet/tests/diamond.nix#L50)).
 
 Evidence:
-- Both twins were probed on 8 variants with identical results: plain diamond, includes plus `at`, the den#468 host-and-users shape, an include cycle, two include levels, a users-only include (an error, never a duplicate), and channel emissions from many scopes. Each variant was measured against a `uniq` option, a list option and a list-fold channel.
+- A probe ran both twins on 7 variants. The results were identical. The variants: plain diamond, includes plus `at`, the den#468 host-and-users shape, an include cycle, two include levels, a users-only include (an error, never a duplicate), and channel emissions from many scopes.
+- The probe measured each variant against a `uniq` option, a list option and a list-fold channel.
 - The template carries a diamond on purpose: [`status`](ren/templates/fleet/modules/features/status.nix) includes `nginx`, which `web` also reaches. Tests in [`tests/diamond.nix`](ren/templates/fleet/tests/diamond.nix) (tier 1) and [`tests-e2e/diamond.nix`](ren/templates/fleet/tests-e2e/diamond.nix) assert single landing, including the den#468 shape on stage.
 - Control: landing once per include path, instead of once per scope, makes the tier-1 diamond tests fail in both twins (1/4), and the e2e haproxy test fails.
+
+</details>
+
+<details>
+<summary><b>Open questions</b></summary>
 
 ## open
 
@@ -402,14 +579,4 @@ Evidence:
 
 Gen-side issues: [#6 realize classes with gen-delivery](https://github.com/vic/ren/issues/6), [#8 smaller hand-rolled Gen primitives](https://github.com/vic/ren/issues/8), [#13 ordered children and ordered kind ancestors](https://github.com/vic/ren/issues/13).
 
-## status-and-testing
-
-Run all checks at the repository root:
-
-```
-nix-shell -p just --run 'just ci'
-```
-
-- `just twin` checks that both templates are the same tree: `diff -r --exclude=flake.nix --exclude=flake.lock ren/templates/fleet stimpy/templates/fleet`.
-- `just ren` and `just stimpy` run one implementation: its `just ci` (treefmt check + nix-unit) and its `just e2e` (realized configs from the template `flake.lock`).
-- The template tests are the same for both. The lib suites differ: [ren/templates/ci](ren/templates/ci/modules/lib), [stimpy/tests](stimpy/tests).
+</details>
