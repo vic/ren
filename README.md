@@ -117,6 +117,7 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - Content args are bindings, channel pools and module args. A function gets only the args it names as formals, also with an `@` pattern.
 - A binding or pool name that clashes with a module arg is an error.
 - Content never reads realized config. Only `into` reads it, through `outputs`.
+- A check of realized config is a class `into` that reads `outputs` of a class it does not forward into, and forwards a derivation into `checks.drvs` (#60).
 
 ### predicates
 
@@ -172,7 +173,7 @@ Each entry says what the file shows and which rule it exercises. Links point at 
 - [platforms/os.nix](ren/templates/fleet/modules/platforms/os.nix#L4-L14): one class key for either OS. Each branch forwards.
 - [platforms/home-manager.nix](ren/templates/fleet/modules/platforms/home-manager.nix#L11-L46): one class, four homes, picked by `within`. [L56-L61](ren/templates/fleet/modules/platforms/home-manager.nix#L56-L61): a bundle; each key lands where its class lives. [L62-L77](ren/templates/fleet/modules/platforms/home-manager.nix#L62-L77): `hm-state` and `hm-standalone` set what home-manager requires (`stateVersion`; `username` and `homeDirectory` in standalone homes).
 - [platforms/droid.nix](ren/templates/fleet/modules/platforms/droid.nix#L19-L25): `phone` spawns only the users with `phone = true`.
-- [platforms/checks.nix](ren/templates/fleet/modules/platforms/checks.nix#L9-L29): a class that writes its own name. Each content key is one `runNixOSTest`.
+- [platforms/checks.nix](ren/templates/fleet/modules/platforms/checks.nix#L10-L40): a class that writes its own name. Each content key is one `runNixOSTest`; `drvs.<name>` is a ready derivation.
 
 ### hosts
 
@@ -199,6 +200,7 @@ ren.aspects.docker = {
 ### features
 
 - [features/web.nix](ren/templates/fleet/modules/features/web.nix#L14-L25): a channel `to` built from `and`, `when`, `same` and an aspect ref. The kind test guards `r.host`. [L39-L45](ren/templates/fleet/modules/features/web.nix#L39-L45): an aspect ref in `at`. [L48-L60](ren/templates/fleet/modules/features/web.nix#L48-L60): a VM check. [L63-L70](ren/templates/fleet/modules/features/web.nix#L63-L70): the activator.
+- [features/headless.nix](ren/templates/fleet/modules/features/headless.nix#L11-L43): class `noGui` reads lb's realized `environment.systemPackages` through `outputs` and forwards a `runCommand` check into `checks.drvs`. Content is data: host name to forbidden package names.
 - [features/deploy.nix](ren/templates/fleet/modules/features/deploy.nix#L12-L31): `fold = one`, `tags` as a plain emission, and the `colmena` channel with `into`. [L33-L47](ren/templates/fleet/modules/features/deploy.nix#L33-L47): one aspect emits into two channels.
 - [features/dns.nix](ren/templates/fleet/modules/features/dns.nix#L7-L18): a value-gated class (`when`). [L26-L27](ren/templates/fleet/modules/features/dns.nix#L26-L27): `base` gets a second key from another file. The two definitions merge.
 - [features/sync.nix](ren/templates/fleet/modules/features/sync.nix#L13-L27): `devices` through `parent`. [L41](ren/templates/fleet/modules/features/sync.nix#L41): `is ren.aspects.desktop parent` in content. [L38-L40](ren/templates/fleet/modules/features/sync.nix#L38-L40): a placeholder device id. A real fleet keeps the id in a kind field.
@@ -261,7 +263,7 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 | recursive `attrs` | `deploy.nodes` and `colmena` merged from four host scopes | a conflict between hosts on `deploy` | T [outputs-deploy-nodes](ren/templates/fleet/tests/collect.nix#L90), [outputs-colmena-nodes](ren/templates/fleet/tests/collect.nix#L80) |
 | root emission | a `flake-inputs` emission at `ren.fleet.main` reaches `flake-file.inputs` | root emissions dropped | T [flake-inputs-root](ren/templates/fleet/tests/pools.nix#L164), [emitted-overlays-root](ren/templates/fleet/tests/collect.nix#L10) |
 | `attrs` in `into` | `packages.x86_64-linux` from two aspects | two different `hello` values | T [into-attrs-equal-leaf](ren/templates/fleet/tests/conflicts.nix#L56), [into-attrs-conflict](ren/templates/fleet/tests/conflicts.nix#L61) |
-| per-branch stratum 3 | a branch reads `outputs` of a class it does not forward into | a branch that reads `outputs` of its forward target | L [Ren](ren/templates/ci/modules/lib/mkflake-strata.nix#L53-L58), [Stimpy](stimpy/tests/collect.nix#L131-L145). No template branch reads `outputs` |
+| per-branch stratum 3 | a branch reads `outputs` of a class it does not forward into | a branch that reads `outputs` of its forward target | L [Ren](ren/templates/ci/modules/lib/mkflake-strata.nix#L53-L58), [Stimpy](stimpy/tests/collect.nix#L146-L177). Template: [features/headless.nix](ren/templates/fleet/modules/features/headless.nix) reads `outputs.nixosConfigurations` and forwards into `checks` |
 | parent-side `spawns` | users on each machine from `usersOn`; alice on pixel and alice-laptop | `spawns.user` on a kind without `user` in `below` | T [spawn-pixel-only-alice](ren/templates/fleet/tests/scopes.nix#L89), [error-spawns-user-without-below](ren/templates/fleet/tests/errors.nix#L95) |
 | no guest in a guest | — | a guest `on` a guest that makes a scope | T [extra-guest-on-guest-no-scope](ren/templates/fleet/tests/scopes.nix#L106) |
 | identity without scopes | `closure` and `granted` compare groups with `same` | a scope for a data kind | T [data-kinds-have-no-scopes](ren/templates/fleet/tests/scopes.nix#L111), [spawn-lb-only-alice](ren/templates/fleet/tests/scopes.nix#L54) |
@@ -273,9 +275,10 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 | class-channel cycle | — | class K emits c, and c forwards to K | L [Ren](ren/templates/ci/modules/lib/mkflake-chan-into.nix#L69), [Stimpy](stimpy/tests/chan-into.nix#L74) |
 | hosts from JSON | `host:web-1`, `host:web-2` under prod | `environment = "prod"` (a string for a ref) | T [inventory-hosts-scoped](ren/templates/fleet/tests/inventory.nix#L14), [inventory-string-ref-refused](ren/templates/fleet/tests/inventory.nix#L27), E [inventory-web-1-built](ren/templates/fleet/tests-e2e/demos.nix#L9) |
 | generated values | `vars.shared.ca`; `vars.per-machine.<metal>.deploy-key` | entries for ci or studio; values made at eval | T [vars-shared-ca](ren/templates/fleet/tests/vars.nix#L16), [vars-per-machine-metal](ren/templates/fleet/tests/vars.nix#L24), E [vars-plan](ren/templates/fleet/tests-e2e/demos.nix#L14) |
-| VM checks | `checks.x86_64-linux.web` with nodes `client`, `web` | a check on another system | T [checks-names](ren/templates/fleet/tests/checks.nix#L9), E [checks-web-nodes](ren/templates/fleet/tests-e2e/demos.nix#L25) |
-| `buildHost` | `"10.0.1.1"` for web-2; `null` for lb, web-1, stage | a record for ci or studio | T [buildhost](ren/templates/fleet/tests/checks.nix#L18) |
-| facter | active on lb, web-1, web-2, stage | `reportPath` without a report file | T [facter-metal](ren/templates/fleet/tests/checks.nix#L28), E [facter-no-report](ren/templates/fleet/tests-e2e/demos.nix#L41) |
+| VM checks | `checks.x86_64-linux.web` with nodes `client`, `web` | a check on another system | T [checks-names](ren/templates/fleet/tests/checks.nix#L9), E [checks-web-nodes](ren/templates/fleet/tests-e2e/demos.nix#L61) |
+| realized-config check (#60) | `checks.x86_64-linux.lb-no-gui` reads lb's realized `environment.systemPackages`; its script is `touch $out` | firefox on lb: the same check's script ends in `exit 1`; a check that names `inputs.self` | T [checks-names](ren/templates/fleet/tests/checks.nix#L9), E [check-no-gui-lb](ren/templates/fleet/tests-e2e/demos.nix#L29), [check-no-gui-lb-firefox-fails](ren/templates/fleet/tests-e2e/demos.nix#L40) |
+| `buildHost` | `"10.0.1.1"` for web-2; `null` for lb, web-1, stage | a record for ci or studio | T [buildhost](ren/templates/fleet/tests/checks.nix#L21) |
+| facter | active on lb, web-1, web-2, stage | `reportPath` without a report file | T [facter-metal](ren/templates/fleet/tests/checks.nix#L31), E [facter-no-report](ren/templates/fleet/tests-e2e/demos.nix#L77) |
 | channel `type` | lb's `scrape` pool holds r1's `{ job; target; }` | a bad emission; an error without scope, aspect and channel | T [typed-scrape-good-emission-passes](ren/templates/fleet/tests/types.nix#L24), [typed-scrape-nested-bad-field-refused](ren/templates/fleet/tests/types.nix#L34) |
 | diamond | nginx reached through `web` and `status` lands once on web-1 and stage; lb's haproxy names web-1 once | nginx's content twice in one scope; web-1 twice in a list fold or in haproxy's config | T [diamond](ren/templates/fleet/tests/diamond.nix), E [diamond](ren/templates/fleet/tests-e2e/diamond.nix) |
 | merge across files | `base` with keys from two files | — | T [base-merged-across-files](ren/templates/fleet/tests/collect.nix#L122) |

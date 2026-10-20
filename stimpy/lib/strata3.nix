@@ -55,4 +55,32 @@ stimpy: {
       shown = q ++ [ (builtins.head q) ];
     in
     cyclic == [ ] || throw "ren: stratum 3 cycle: ${lib.concatStringsSep " -> " shown}";
+  # README.md#evaluation-order row 3 (#60): the `outputs` col c reads. An output of c's class, or of a
+  # class c forwards into (transitively), throws when read; any other output passes through, lazily.
+  outputsFor =
+    {
+      cols,
+      fwdKeys,
+      outKeys,
+      outputs,
+    }:
+    c:
+    let
+      inherit (stimpy) lib;
+      node = key: { inherit key; };
+      fwdOf = k: lib.concatMap fwdKeys (lib.filter (d: d.k == k) cols);
+      reach = [
+        c.k
+      ]
+      ++ map (n: n.key) (
+        builtins.genericClosure {
+          startSet = map node (fwdKeys c);
+          operator = n: map node (fwdOf n.key);
+        }
+      );
+      mine = o: lib.any (d: builtins.elem d.k reach && builtins.elem o (outKeys d)) cols;
+      refuse =
+        o: "ren: class `${c.k}` reads `outputs.${o}` produced by a class it forwards into (stratum 3)";
+    in
+    lib.mapAttrs (o: v: if mine o then throw (refuse o) else v) outputs;
 }

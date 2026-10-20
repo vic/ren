@@ -5,11 +5,14 @@ let
   names = builtins.attrNames;
 in
 {
-  # row: one named check on x86_64-linux; other systems get none (key names only: no pkgs here)
+  # row: two named checks on x86_64-linux (web; lb-no-gui, #60); other systems get none (key names only: no pkgs here)
   test-checks-names = {
     expr = lib.mapAttrs (_: names) r.outputs.checks;
     expected = {
-      x86_64-linux = [ "web" ];
+      x86_64-linux = [
+        "lb-no-gui"
+        "web"
+      ];
       aarch64-linux = [ ];
       aarch64-darwin = [ ];
     };
