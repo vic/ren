@@ -108,6 +108,7 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - An aspect is a unit of configuration. `at` activates it. An aspect without `at` fires only where it is included.
 - `includes` and `excludes` take refs to declared aspects only. An inline aspect or a string is an error.
 - `includes` and `excludes` work in the aspect's scopes and their subtrees. `excludes` wins over `includes`.
+- An aspect reached by several include paths (a diamond), or by includes and its own `at`, lands once per scope. Identity is the declared path (gen-aspects `key`, one `id_hash`): an include is a reference, never a copy. So a host and its N users that all include one aspect give that aspect once on the host and once per user.
 - A key that names a class is config. A key that names a channel is an emission. Any other key is an error.
 - A key of an active aspect that lands in none of its scopes is an error.
 - One aspect in several files merges like a module option: class content merges as modules, `includes`/`excludes` concatenate, `at` and channel values must agree.
@@ -275,6 +276,7 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 | `buildHost` | `"10.0.1.1"` for web-2; `null` for lb, web-1, stage | a record for ci or studio | T [buildhost](ren/templates/fleet/tests/checks.nix#L18) |
 | facter | active on lb, web-1, web-2, stage | `reportPath` without a report file | T [facter-metal](ren/templates/fleet/tests/checks.nix#L28), E [facter-no-report](ren/templates/fleet/tests-e2e/demos.nix#L41) |
 | channel `type` | lb's `scrape` pool holds r1's `{ job; target; }` | a bad emission; an error without scope, aspect and channel | T [typed-scrape-good-emission-passes](ren/templates/fleet/tests/types.nix#L24), [typed-scrape-nested-bad-field-refused](ren/templates/fleet/tests/types.nix#L34) |
+| diamond | nginx reached through `web` and `status` lands once on web-1 and stage; lb's haproxy names web-1 once | nginx's content twice in one scope; web-1 twice in a list fold or in haproxy's config | T [diamond](ren/templates/fleet/tests/diamond.nix), E [diamond](ren/templates/fleet/tests-e2e/diamond.nix) |
 | merge across files | `base` with keys from two files | — | T [base-merged-across-files](ren/templates/fleet/tests/collect.nix#L122) |
 | helpers | every shared helper in `ren.helpers` | a helper in `_module.args` | T [helpers-in-ren-helpers](ren/templates/fleet/tests/helpers.nix#L33), [helpers-not-module-args](ren/templates/fleet/tests/helpers.nix#L38) |
 | instances as data | `ren.lib.data x` in a module option | a field named `key`, or an internal | T [data-into-option](ren/templates/fleet/tests/data.nix#L59), [field-key-refused](ren/templates/fleet/tests/data.nix#L55) |
@@ -333,6 +335,7 @@ Every user-facing pattern in Den's docs, templates, CI tests, issues and Matrix 
 | quirks, pipes (`collect`, `broadcast`, `to`, `withProvenance`) | channels: `at`, `to` predicates, `fold`; provenance in the value | covered |
 | quirk `{ config, ... }:` thunk, cross-host config | content never reads config; `into` reads `outputs` (stratum 3) | refused |
 | quirk named like a class | class and channel names are disjoint | covered |
+| diamond: mixed aspect via N users to one host ("defined multiple times", den#468 `<class>@<identity>` dedup) | one atom per (aspect, scope): lands once per scope; a host class key never lands at a user scope | covered |
 | identical values merge, different values error | the `attrs` law | covered |
 | one aspect in several files | merges like a module option | covered |
 | schema on quirk values | channel `type` | covered |
