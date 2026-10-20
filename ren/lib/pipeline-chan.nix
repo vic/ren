@@ -40,6 +40,7 @@ ren: {
             out = removeAttrs res (filter isFwd ks);
             fwd = map (k: {
               inherit k;
+              from = r;
               t = target c r k;
               v = res.${k};
             }) (filter isFwd ks);
@@ -51,6 +52,7 @@ ren: {
       keysAt = c: r: attrNames (channels.${c}.into (renArgs r) (noPool c));
     in
     {
+      inherit fwds;
       outputs = builtins.seq (builtins.deepSeq (map (f: f.t) fwds) null) (map (f: f.out) frags);
       fwdTo = k: t: map (f: f.v) (filter (f: f.k == k && f.t == t) fwds);
       classKeys =

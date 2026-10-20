@@ -86,10 +86,13 @@ stimpy: {
         ++ [ chan.cycle ];
     in
     {
-      inherit outputs intoEmissions checks;
+      inherit
+        outputs
+        intoEmissions
+        checks
+        fwds
+        ;
       inherit (chan) cycle;
-      forwarded = lib.mapAttrs (
-        j: _: lib.mapAttrs (_: map (f: f.from)) (lib.groupBy (f: f.t) (filter (f: f.j == j) fwds))
-      ) classes;
+      chanFwds = chan.fwds;
     };
 }

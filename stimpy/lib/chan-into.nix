@@ -38,6 +38,7 @@ stimpy: {
             out = removeAttrs res fk;
             fwd = map (k: {
               inherit k;
+              from = r;
               t = target ch r k;
               m = {
                 key = builtins.toJSON [
@@ -59,6 +60,7 @@ stimpy: {
         ch: lib.optionals (channels.${ch} ? into) (concatMap (keysAt ch) (attrNames pools.${ch}));
     in
     {
+      inherit fwds;
       outputs = builtins.seq (builtins.deepSeq (map (f: f.t) fwds) null) (map (f: f.out) frags);
       fwdInto = k: id: map (f: f.m) (filter (f: f.k == k && f.t == id) fwds);
       cycle = stimpy.strata3 {
