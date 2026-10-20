@@ -193,3 +193,4 @@ import ./class-lib.nix { inherit inputs; }
   };
 }
 // import ./demos.nix { inherit o lib; }
+// import ./diamond.nix { inherit o lib; }
