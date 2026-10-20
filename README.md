@@ -2,6 +2,8 @@
 
 ![ren](ren-and-stimpy.gif)
 
+> Usage examples: [Fleet Template](ren/templates/fleet/modules) - [vic/vix](https://github.com/vic/vix/tree/ren)
+
 Ren is a small surface language for aspect-oriented, context-driven Nix fleets.
 Ren was [designed](design/fleet.md) by [vic](https://github.com/vic) and is inspired by [Den](https://github.com/denful/den).
 If you know Den, you know the ideas. Ren gives them a smaller grammar.
