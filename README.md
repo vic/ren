@@ -364,6 +364,22 @@ Every user-facing pattern in Den's docs, templates, CI tests, issues and Matrix 
 | host users declared inside an aspect | existence is `spawns`, stratum 0 | refused |
 | real-host config from a standalone home | a home has no host scope | refused |
 
+## diamond-safety
+
+Den's hardest bug was the diamond. [drupol's review](https://not-a-number.io/2026/evaluating-den-a-dendritic-configuration-framework/) shows the shape, and the [follow-up](https://not-a-number.io/2026/den-framework-follow-up-issue-fixed/) explains the fix (den#468). In the shape, a host has users alice and bob. A mixed aspect `base` (`nixos` + `homeManager`) goes to both users, and each user forwards its `nixos` part back to the one host. The host then gets the same `nixos` content once per user: `boot.kernelPackages is defined multiple times while it's expected to be unique`. Den fixed it with a `<class>@<identity>` dedup key, and anonymous aspects stay outside that fix.
+
+Ren and Stimpy are safe by construction. No dedup pass is needed:
+
+- **Identity is the declared path.** An aspect exists only as `ren.aspects.<name>`. gen-aspects gives it one key and one `id_hash`, whichever include path reaches it. An include is a reference edge, not a copy.
+- **No anonymous aspects.** An `includes` element must be a ref. An inline aspect is refused (see [aspects](#aspects)), so nothing can lack an identity.
+- **Activation is a set, not a walk.** Each (aspect, scope) pair is one activation atom. A second include path, or an `at` match as well as an include, only adds another reason for that atom to be true. Content lands once per active atom.
+- **The den#468 shape is measured, not argued.** An aspect active at every user of `stage` lands its `nixos` content once on stage and never at a user scope ([`test-diamond-host-and-users`](ren/templates/fleet/tests/diamond.nix#L50)).
+
+Evidence:
+- Both twins were probed on 8 variants with identical results: plain diamond, includes plus `at`, the den#468 host-and-users shape, an include cycle, two include levels, a users-only include (an error, never a duplicate), and channel emissions from many scopes. Each variant was measured against a `uniq` option, a list option and a list-fold channel.
+- The template carries a diamond on purpose: [`status`](ren/templates/fleet/modules/features/status.nix) includes `nginx`, which `web` also reaches. Tests in [`tests/diamond.nix`](ren/templates/fleet/tests/diamond.nix) (tier 1) and [`tests-e2e/diamond.nix`](ren/templates/fleet/tests-e2e/diamond.nix) assert single landing, including the den#468 shape on stage.
+- Control: landing once per include path, instead of once per scope, makes the tier-1 diamond tests fail in both twins (1/4), and the e2e haproxy test fails.
+
 ## open
 
 - Parent-side `spawns` spreads "where users come from" over five kinds. `usersOn` keeps the rule in one place. A child-side form needs new words (`under`, `picks`).
