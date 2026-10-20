@@ -47,13 +47,20 @@ ren: {
               concatMap (dnf p.args) (ctx.children s)
             else
               foldl' (acc: c: cross acc (flip c)) one (dnf p.args s);
-          by = field: a: filter (b: elem a (names aspects.${b}.${field})) ns;
+          # one table per field (as Stimpy's includers/excluders), not a scan per (aspect, scope)
+          by =
+            builtins.mapAttrs
+              (field: _: builtins.mapAttrs (a: _: filter (b: elem a (names aspects.${b}.${field})) ns) aspects)
+              {
+                excludes = 0;
+                includes = 0;
+              };
           rules =
             a: s:
             let
               # not excluded(a,s): no excluder is active on an ancestor-or-self of s
-              ex = concatMap (b: map (atom b) (orSelf s)) (by "excludes" a);
-              inc = concatMap (b: map (t: lit [ (atom b t) ] [ ]) (orSelf s)) (by "includes" a);
+              ex = concatMap (b: map (atom b) (orSelf s)) by.excludes.${a};
+              inc = concatMap (b: map (t: lit [ (atom b t) ] [ ]) (orSelf s)) by.includes.${a};
               at = if aspects.${a}.at == null then [ ] else dnf aspects.${a}.at s;
             in
             map (c: {
