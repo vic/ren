@@ -52,6 +52,19 @@ in
         }
       ];
     };
+    # why: an edge key is `label:src:dst`; the answer is the declaration that made the edge
+    test-inspect-why = {
+      expr = (ren.inspect r).why "top:root:r/box:b:root:r";
+      expected = {
+        kind = "declaration";
+        site = "relations.top.root:r/box:b";
+      };
+    };
+    # negative control: a key that is no edge is refused by name
+    test-inspect-why-unknown-edge = {
+      expr = (ren.inspect r).why "top:root:r:root:r/box:b";
+      expectedError.type = "ThrownError";
+    };
     # negative control: a label the graph does not have is refused by gen-inspect's door
     test-inspect-query-unknown-label = {
       expr = q "SELECT src FROM nope";

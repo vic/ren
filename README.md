@@ -11,19 +11,59 @@ You declare your own domain (kinds and instances), and Ren puts each piece of co
 This README is the design. The [fleet template](ren/templates/fleet) is its executable example.
 The top part is a short tour. The [specification](#specification) and the reference parts are collapsed below it.
 
+## example
+
+One root kind, one host, one channel, one class and one aspect. The full fleet is the [template](ren/templates/fleet/modules).
+
+```nix
+{ ren, lib, inputs, ... }:
+{
+  ren.kinds.fleet.below = [ ren.kinds.host ]; # root kind: hosts are its children
+  ren.kinds.host.addr = lib.types.str; # a typed field; no default = required
+  ren.fleet.main = { };
+  ren.host.lb.addr = "10.0.1.1"; # an instance; one scope: fleet:main/host:lb
+  ren.channels.persist = {
+    fold = ren.lib.fold.set; # a receiver gets the emissions as a set
+    at = ren.kinds.host; # emitters: the host scopes
+    to = e: e.host; # receiver: the host that emitted
+  };
+  ren.classes.nixos = {
+    at = ren.kinds.host; # one nixos module system per host scope
+    into = { host, ... }: ms: { # ms: the nixos modules that landed at this host
+      nixosConfigurations.${host.name} = inputs.nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = ms;
+      };
+    };
+  };
+  ren.aspects.motd = {
+    at = ren.kinds.host; # a predicate: the scopes where the aspect is active
+    persist = { ... }: "/var/lib/motd"; # an emission into the persist channel
+    nixos = { persist, ... }: { # the folded pool arrives as a content arg
+      environment.etc.motd.text = "managed by ren";
+      environment.etc.persisted.text = lib.concatStringsSep "\n" persist;
+    };
+  };
+}
+```
+
+`host` in `into` is a binding: the scope binds each instance on its path under its kind name.
+Here it is `ren.host.lb`. `ms` is the list of modules that the aspects landed at this scope.
+The `persist` pool at lb is `[ "/var/lib/motd" ]`.
+
 ## what-ren-and-stimpy-are
 
 One design, two twin implementations. They exist to measure Gen against `nixpkgs.lib`.
 A difference between them must come from the library, never from the fleet.
 
-- [Ren](ren) is built only on [Gen](https://github.com/sini/gen) (`github:sini/gen`, rev `bcbc5ca`).
+- [Ren](ren) is built only on [Gen](https://github.com/sini/gen). The pinned rev is in [ren/default.nix](ren/default.nix).
   Ren is not the next Den. It checks that Gen can implement every [Den capability](#den-coverage).
   [ren/lib](ren/lib) does not use nixpkgs. The realized configs still go through `lib.nixosSystem` and friends.
 - [Stimpy](stimpy) is built only on `nixpkgs.lib`. It never uses Gen code.
 - Both run one fleet template. `ren/templates/fleet` and `stimpy/templates/fleet` are the same tree.
   Only `flake.nix` and `flake.lock` differ (the input `ren` or `stimpy`).
 - Ren knows nothing about hosts, users or NixOS. You declare your own domain. Ren wires it together.
-  All kind names below (`environment`, `host`, `mac`) belong to the template, not to Ren.
+  All kind names in this README (`environment`, `host`, `mac`) belong to the template, not to Ren.
 
 ## concepts
 
@@ -52,33 +92,6 @@ flowchart LR
 ```
 
 Each step reads only the steps before it. The [evaluation order](#evaluation-order) gives the exact strata.
-
-## example
-
-One root kind, one host, one class and one aspect. The full fleet is the [template](ren/templates/fleet/modules).
-
-```nix
-{ ren, lib, inputs, ... }:
-{
-  ren.kinds.fleet.below = [ ren.kinds.host ]; # root kind: hosts are its children
-  ren.kinds.host.addr = lib.types.str; # a typed field; no default = required
-  ren.fleet.main = { };
-  ren.host.lb.addr = "10.0.1.1"; # an instance; one scope: fleet:main/host:lb
-  ren.classes.nixos = {
-    at = ren.kinds.host; # one nixos module system per host scope
-    into = { host, ... }: ms: {
-      nixosConfigurations.${host.name} = inputs.nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = ms;
-      };
-    };
-  };
-  ren.aspects.motd = {
-    at = ren.kinds.host; # a predicate: the scopes where the aspect is active
-    nixos.environment.etc.motd.text = "managed by ren";
-  };
-}
-```
 
 ## usage
 
@@ -121,6 +134,26 @@ nix-shell -p just --run 'just ci'
 ## specification
 
 <details>
+<summary><b>Evaluation order</b>: the four strata</summary>
+
+## evaluation-order
+
+Ren evaluates in four strata, numbered 0 to 3. A stratum reads only the strata before it.
+The rules below use these numbers.
+
+| stratum | computes | reads | a cycle inside it is |
+|---|---|---|---|
+| 0 scopes | `below`/`spawns` tree, `is`, `parent`, `within`, `has K` | instances, `same`, `when` on bindings | an instance twice on a path is an error (see [kinds](#kinds)) |
+| 1 activation | `at`, `includes`, `excludes`, aspect refs | stratum 0 | an error "not stratified" through `not`/`excludes` |
+| 2 content | aspect values, channel folds, `is P x` | strata 0-1, pools (lazy) | Nix infinite recursion, never a wrong value |
+| 3 classes | `into`: forwards, outputs; channel `into` | strata 0-2; `outputs` of classes this branch does not forward into | an error from a static check on one graph of classes and channels |
+
+Stratum 3 edges: a K branch returns channel key c (K to c) or class key K' (K to K'). A channel `into` returns class key K (c to K).
+Keys are probed without forcing `ms`, the pool or `outputs`. The error names the cycle: ``ren: stratum 3 cycle: class `K` -> channel `c` -> class `K` ``.
+
+</details>
+
+<details>
 <summary><b>Vocabulary</b>: the 22 reserved words</summary>
 
 ## vocabulary
@@ -135,6 +168,11 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 | bindings | `parent outputs` |
 
 `at` means "which scopes" on every noun. A kind, instance or aspect ref is also a predicate.
+
+Two words have two meanings. Both are tracked in [#68](https://github.com/vic/ren/issues/68), which proposes a rename.
+
+- `is` is a key and a predicate. As a key, `is = K` in a kind makes a subkind (see [kinds](#kinds)). As a predicate, `is P x` tests the scope of `x` on the current path (see [predicates](#predicates)).
+- `when` is a predicate and a kind gate. As a predicate, `when f` tests the scope bindings. In a function kind, `{ db, region }: when (…) { }` decides which args make an instance.
 
 </details>
 
@@ -195,7 +233,7 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - Forwards chain (class to class to class). A forward cycle is an error.
 - Class content gets the `lib` of its own module system (for example `lib.hm` in home-manager), not Ren's.
 - `ms` are modules (`{ imports = [ fn ]; _file; }`).
-- An `into` that writes into a config-only submodule (`users.users.<n>`) uses `ren.lib.flatten args ms` (#59). `flatten` does three things:
+- An `into` that writes into a config-only submodule (`users.users.<n>`) uses `ren.lib.flatten args ms`. `flatten` does three things:
   - It calls each content function with `args`. `args` are the module args of the module that holds the write. If content needs `pkgs`, name `pkgs` there.
   - It drops `imports`, `_file` and `key`.
   - It returns one `mkMerge` value.
@@ -235,7 +273,7 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - Content args are bindings, channel pools and module args. A function gets only the args it names as formals, also with an `@` pattern.
 - A binding or pool name that clashes with a module arg is an error.
 - Content never reads realized config. Only `into` reads it, through `outputs`.
-- A check of realized config is a class `into` that reads `outputs` of a class it does not forward into, and forwards a derivation into `checks.drvs` (#60).
+- A check of realized config is a class `into` that reads `outputs` of a class it does not forward into, and forwards a derivation into `checks.drvs`.
 
 </details>
 
@@ -251,8 +289,8 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - `within P`: a proper ancestor matches P. `has P`: a child matches P.
 - `same a b` is identity (gen-schema `id_hash`). It needs no scope, so it works on data kinds and inside `spawns`.
 - `is P x`: the scope of x on the current path (nearest ancestor-or-self) matches P. No such scope is an error.
-- `nearest K s`: the instance of the nearest ancestor-or-self scope of `s` that matches K (a kind ref follows `is`: a guest is a machine), or null. `s` must be a scope (#57).
-- `upTo K e` is `and [ K (anyOf [ e (has e) ]) ]`: e itself if it is a K, and the K that e is a child of. A guest in a host gives both (#58).
+- `nearest K s`: the instance of the nearest ancestor-or-self scope of `s` that matches K (a kind ref follows `is`: a guest is a machine), or null. `s` must be a scope.
+- `upTo K e` is `and [ K (anyOf [ e (has e) ]) ]`: e itself if it is a K, and the K that e is a child of. A guest in a host gives both.
 - Aspect refs are stratified. A cycle through `not` or `excludes` is an error ("not stratified").
 
 </details>
@@ -290,7 +328,7 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - Plain `lib.evalModules`: `lib.flakeModule`, option `fleet`. Ren also accepts Gen modules there.
 - Tests: `evalFleet inputs module` returns `scopes active landed pools emitted branches outputs forwarded channels forwards` in both twins. `channels` is `name -> { emitters = [ id ]; receivers = emitter -> [ id ]; }`. `forwards` is `[ { class; from; to; } ]` (class forwards and channel `into` forwards).
 - Inside the fleet: `ren.lib.result` is the same RESULT without `outputs`. It is lazy and read-only. Read it in an `into` (stratum 3). Deciding kinds, activation or `at` from it is a cycle: a Nix eval error, never a wrong value.
-- Ren only: `ren.lib.inspect` is a gen-inspect inspector over the scope graph (edges `child`, `<class>`, `<channel>`): `.render.mermaid`, `.query`, `.select`, `.why`. The template never uses it (#51: mermaid handles keep `/`).
+- Ren only: `ren.lib.inspect` is a gen-inspect inspector over the scope graph (edges `child`, `<class>`, `<channel>`): `.render.mermaid`, `.query`, `.select`, `.why`. The template never uses it. See [debugging](#debugging).
 
 </details>
 
@@ -374,23 +412,6 @@ to = e: e.host;
 </details>
 
 <details>
-<summary><b>Evaluation order</b>: the four strata</summary>
-
-## evaluation-order
-
-| stratum | computes | reads | a cycle inside it is |
-|---|---|---|---|
-| 0 scopes | `below`/`spawns` tree, `is`, `parent`, `within`, `has K` | instances, `same`, `when` on bindings | an instance twice on a path is an error (see [kinds](#kinds)) |
-| 1 activation | `at`, `includes`, `excludes`, aspect refs | stratum 0 | an error "not stratified" through `not`/`excludes` |
-| 2 content | aspect values, channel folds, `is P x` | strata 0-1, pools (lazy) | Nix infinite recursion, never a wrong value |
-| 3 classes | `into`: forwards, outputs; channel `into` | strata 0-2; `outputs` of classes this branch does not forward into | an error from a static check on one graph of classes and channels |
-
-Stratum 3 edges: a K branch returns channel key c (K to c) or class key K' (K to K'). A channel `into` returns class key K (c to K).
-Keys are probed without forcing `ms`, the pool or `outputs`. The error names the cycle: ``ren: stratum 3 cycle: class `K` -> channel `c` -> class `K` ``.
-
-</details>
-
-<details>
 <summary><b>Expected results</b>: what must and must not appear, with tests</summary>
 
 ## expected-results
@@ -399,7 +420,7 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 
 | row | what appears | what must not appear | tests |
 |---|---|---|---|
-| fleet docs from the result (#48) | `docs.mermaid` lists every scope id and the forward edges, for example `guest:ci` -->|nixos| `host:stage` | a diagram built from predicates; a read of `ren.lib.result` that decides `at` evaluating | [T docs](ren/templates/fleet/tests/docs.nix) |
+| fleet docs from the result (#48) | `docs.mermaid` lists every scope id and the forward edges, for example `guest:ci` -->|nixos| `host:stage` | a diagram built from predicates; a read of `ren.lib.result` that decides `at` evaluating. Open: mermaid handles keep `/` (#51) | [T docs](ren/templates/fleet/tests/docs.nix) |
 | fold one | `deploy.nodes.lb.hostname = "10.0.1.1"` | two `deployment` emitters on one host | T [deployment-lb-address](ren/templates/fleet/tests/pools.nix#L9), [error-two-deployment-emitters](ren/templates/fleet/tests/errors.nix#L79), E [fold-one](ren/templates/fleet/tests-e2e/default.nix#L87) |
 | fold list order | lb's haproxy lists web-1, then web-2 | order from attribute or include order | T [backends-lb-exact](ren/templates/fleet/tests/pools.nix#L36), E [fold-list-order](ren/templates/fleet/tests-e2e/default.nix#L91) |
 | guest channel | ci (`stable`) built with stable pkgs inside stage (`edge`) | ci built with the pkgs of stage | T [guest-ci-channel-stable](ren/templates/fleet/tests/channels.nix#L8), E [guest-ci-stable-pkgs](ren/templates/fleet/tests-e2e/default.nix#L18) |
@@ -454,29 +475,67 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 </details>
 
 <details>
+<summary><b>Debugging</b>: why is aspect X active at scope Y? Real error messages</summary>
+
+## debugging
+
+**Which scopes is aspect X active at?** Read the RESULT. In both twins, `evalFleet inputs module` returns it (see [entry points](#entry-points)).
+`r.active.<aspect>` lists the scope ids. `r.landed` shows what landed where. `r.pools` shows what each receiver got.
+Example, from the [example](#example) above: `r.active.motd` is `[ "fleet:main/host:lb" ]`.
+
+**Why is an edge in the scope graph?** Ren only. `ren.inspect r` (inside a fleet: `ren.lib.inspect`) is a gen-inspect inspector over the scope graph.
+
+```nix
+(ren.inspect r).why "top:root:r/box:b:root:r"
+# => { kind = "declaration"; site = "relations.top.root:r/box:b"; }
+```
+
+- The argument is an edge key: `<label>:<from id>:<to id>`. The label is `child`, a class name or a channel name.
+- The answer names the declaration that made the edge. A key that is no edge is an error from gen-inspect.
+- `.why` explains edges, not activation. It does not say which `at`, `includes` or `excludes` made an aspect active. Use `r.active` and read `at` for that.
+- Tests: [inspect.nix](ren/templates/ci/modules/lib/inspect.nix) (`test-inspect-why`, `test-inspect-why-unknown-edge`). Other inspector calls: `.render.mermaid`, `.query "SELECT …"`, `.select`.
+
+**Error gallery.** These are Ren's messages, copied from [ren/lib](ren/lib). `<…>` marks a name that Ren fills in. Stimpy words some of them in its own way.
+
+| message | cause |
+|---|---|
+| ``ren: aspects not stratified: <atoms>`` | An aspect `at`, `includes` or `excludes` forms a cycle through `not` or `excludes`. |
+| ``ren: aspect `<a>`: key `<k>` lands in none of its scopes`` | The aspect is active, but no scope has a class branch or channel for that key. |
+| ``ren: aspect `<a>`: key `<k>` is neither class nor channel`` | A key of an aspect names no declared class and no declared channel. |
+| ``ren: aspect `<a>`: includes[<i>] is not a ref to a declared aspect (inline aspects are not supported, see #21)`` | An `includes` element is an inline aspect or a string. Use `ren.aspects.<name>`. |
+| ``ren: bare function emission; wrap it in `{ ... }:` `` | Content is a bare function such as `final: prev:`. Give it an attrset pattern. |
+| ``ren: instance <id> twice on path <path>`` | A `below` cycle reached the same instance a second time on one path. |
+| ``ren: name `<n>` used by both kind `<k1>` and kind `<k2>` `` | Two kinds of one family share an instance name (`ren.host.ci` and `ren.guest.ci`). |
+| ``ren: class `<c>` at <id> forwards to `<k>` but no scope has a `<k>` branch`` | An `into` returned a class key, and no ancestor-or-self scope has a branch of that class. |
+| ``ren: class `<c>` reads `outputs.<o>` produced by a class it forwards into (stratum 3)`` | An `into` reads the `outputs` of its own forward target. See [evaluation order](#evaluation-order). |
+| ``ren: channel `<c>` fold attrs: conflict at `<path>` `` | Two emissions set different leaves at one path of an `attrs` channel. |
+
+</details>
+
+<details>
 <summary><b>Gen mapping</b>: which Gen part each Ren construct uses</summary>
 
 ## gen-mapping
 
-What `ren/lib` calls today (`grep -rho 'gen\.[a-z]*' ren/lib`). Stimpy calls no Gen code.
+What `ren/lib` calls today. The table follows the output of `rg -o 'gen\.[a-z]+' ren/lib | sed 's/.*://' | sort -u`.
+Stimpy calls no Gen code. The Gen rev is pinned in [ren/default.nix](ren/default.nix).
 
-| Ren construct | Gen part | status |
-|---|---|---|
-| `ren.lib.inspect` (Ren only) | gen-inspect `mkInspector` / `fromGraph` | direct |
-| scope tree, `below`/`spawns` | gen-scope `mkKinds`, `eval`; spawned ids are minted `bare@parent` | glue: kinds become depth levels ([sini/gen-scope#2](https://github.com/sini/gen-scope/issues/2)) |
-| `and anyOf not within has` | gen-select, same names | direct |
-| kind, instance, aspect refs; `is` | gen-select `when` | glue: gen-select `kind`/`subkind`/`entity` need gen-schema kinds |
-| `when f` | gen-select `when` | 1-line adapter |
-| `same` | gen-schema `evalSchema`, `identityHashForKind` | direct |
-| typed strict kinds | gen-merge `evalModuleTree`, `types` | glue (not gen-schema registries) |
-| folds `list`/`one` | gen-scope `folds.list`/`folds.one` | direct |
-| folds `set`/`attrs` | gen-scope has no dedup set fold; its `mergeAttrs` is shallow | gap ([sini/gen-scope#2](https://github.com/sini/gen-scope/issues/2)) |
-| aspect cycle check | gen-graph `topoOrder` | direct |
-| aspects, `includes`, `excludes` | gen-aspects and gen-program not called; Gen has no exclude | gap |
-| class/channel keys, landing | gen-aspects `keyCategory` not called | gap |
-| classes, forwards, channel `into` | gen-delivery not called | gap ([#6](https://github.com/vic/ren/issues/6)) |
-| `lib` without nixpkgs | gen-prelude, gen-merge; `lib/gen-lib.nix` shims seven helpers | gap ([sini/gen-prelude#1](https://github.com/sini/gen-prelude/issues/1)) |
-| importing Gen | `import gen { }` | about 20s of the test run ([sini/gen#2](https://github.com/sini/gen/issues/2)) |
+| Gen part | called | Ren construct | status |
+|---|---|---|---|
+| `gen.aspects` | `keyCategory`, `hasClassContent`, `aspectsType` ([view.nix](ren/lib/view.nix#L44)) | class and channel keys, aspect typing | direct |
+| `gen.assemble` | `mkId` ([scopes-node.nix](ren/lib/scopes-node.nix#L16), [kinds-check.nix](ren/lib/kinds-check.nix#L73)) | scope and instance ids | direct |
+| `gen.bind` | `wrap` ([content.nix](ren/lib/content.nix#L12)) | content args = bindings | direct |
+| `gen.graph` | `ancestorsOf`, `reachableFrom`, `cyclePaths` ([kinds.nix](ren/lib/kinds.nix#L13), [strata.nix](ren/lib/strata.nix#L25)) | `is` chains; the stratum 3 cycle check | direct |
+| `gen.inspect` | `fromGraph` ([inspect.nix](ren/lib/inspect.nix)) | `ren.lib.inspect` (Ren only) | direct |
+| `gen.merge` | `evalModuleTree`, `types`, `moduleSyntax` ([gen-lib.nix](ren/lib/gen-lib.nix)) | typed strict kinds | glue (not gen-schema registries) |
+| `gen.prelude` | list and attr helpers | `lib` without nixpkgs; [gen-lib.nix](ren/lib/gen-lib.nix) shims seven helpers | gap ([sini/gen-prelude#1](https://github.com/sini/gen-prelude/issues/1)) |
+| `gen.program` | `program`, `model` ([activation.nix](ren/lib/activation.nix#L65)) | aspects, `includes`, `excludes` as rules; Gen has no exclude | glue |
+| `gen.schema` | `evalSchema`, `mkValidator` ([kinds.nix](ren/lib/kinds.nix#L10)), `mkInstanceRegistry` ([kinds-check.nix](ren/lib/kinds-check.nix#L43)) | `same` (identity hash); kind validation | direct |
+| `gen.scope` | `mkKinds`, `eval`, `folds.list`, `folds.one` ([scopes.nix](ren/lib/scopes.nix), [folds.nix](ren/lib/folds.nix#L44)) | scope tree; folds `list`/`one`. Spawned ids are minted `bare@parent` | glue: kinds become depth levels ([sini/gen-scope#2](https://github.com/sini/gen-scope/issues/2)) |
+| `gen.scope` | no dedup `set` fold; `mergeAttrs` is shallow | folds `set`/`attrs` | gap ([sini/gen-scope#2](https://github.com/sini/gen-scope/issues/2)) |
+| `gen.select` | `when`, `matches`, `subkind`, `entity`, `adapters` ([predicates.nix](ren/lib/predicates.nix#L6)) | `and anyOf not within has`; `when f` (1-line adapter); refs and `is` | direct. `kind`/`subkind`/`entity` need gen-schema kinds, so refs are glue |
+| `gen-delivery` | not called | classes, forwards, channel `into` | gap ([#6](https://github.com/vic/ren/issues/6)) |
+| importing Gen | `import gen { }` | — | about 20s of the test run ([sini/gen#2](https://github.com/sini/gen/issues/2)) |
 
 </details>
 
