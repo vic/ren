@@ -13,6 +13,7 @@ let
   helix = p: p.helix.version;
 in
 import ./class-lib.nix { inherit inputs; }
+// import ./flatten.nix { inherit inputs; }
 // {
   # README.md#features: ci builds with stable pkgs inside edge stage
   test-guest-ci-stable-pkgs = {

@@ -74,6 +74,7 @@ ren: {
         instances
         test
         ;
+      nearest = ren.nearestAt ctx { activeAt = act.active; };
       result = ren.pipelineResult (args // { inherit branchIx receivers o; });
     };
 }
