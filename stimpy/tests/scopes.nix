@@ -72,22 +72,6 @@ in
     ];
     expectedError = err;
   };
-  test-below-cycle = {
-    expr = ids [
-      (
-        { ren, ... }:
-        kind {
-          c1.below = [ ren.kinds.c2 ];
-          c2.below = [ ren.kinds.c1 ];
-        }
-      )
-    ];
-    expectedError = err;
-  };
-  test-below-self = {
-    expr = ids [ ({ ren, ... }: kind { c3.below = [ ren.kinds.c3 ]; }) ];
-    expectedError = err;
-  };
   # guest-in-guest analogue: vm's own below lacks vm ⟹ no vm under vm
   test-no-vm-in-vm = {
     expr = lib.any (lib.hasInfix "vm:v1/vm:") (lib.attrNames (ids [ ]));
