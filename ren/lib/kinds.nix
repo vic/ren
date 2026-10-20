@@ -46,9 +46,24 @@ ren: {
               isName = if p.body ? is then nameOf p.body.is else null;
               own = ren.ownFields n (p.argFields // removeAttrs p.body reserved);
             in
-            {
+            (lib.mkOptionType {
+              name = "ren-kind-${n}";
+              description = "instance of ren kind ${n}";
+              check = v: v.__ren or null == "instance" && builtins.elem n (chainOf kinds v.kind);
+              merge =
+                loc: defs:
+                let
+                  v = (lib.last defs).value;
+                in
+                if builtins.all (d: d.value.__id == v.__id) defs then
+                  v
+                else
+                  throw "ren: conflicting definitions of ${lib.showOption loc}";
+            })
+            // {
               __ren = "kind";
               name = n;
+              args = builtins.attrNames p.argFields; # README.md#scopes: the only fields a scope binds
               below = builtins.seq own (map nameOf (p.body.below or [ ])); # scopes read every kind's below
               spawns =
                 let
@@ -73,23 +88,6 @@ ren: {
                   }
                 );
               };
-            }
-            // (lib.mkOptionType {
-              name = "ren-kind-${n}";
-              description = "instance of ren kind ${n}";
-              check = v: v.__ren or null == "instance" && builtins.elem n (chainOf kinds v.kind);
-              merge =
-                loc: defs:
-                let
-                  v = (lib.last defs).value;
-                in
-                if builtins.all (d: d.value.__id == v.__id) defs then
-                  v
-                else
-                  throw "ren: conflicting definitions of ${lib.showOption loc}";
-            })
-            // {
-              name = n;
             };
           schema = S.evalSchema { } [ { config.schema = builtins.mapAttrs (_: k: k.module) kinds; } ];
         in

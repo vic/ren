@@ -2,19 +2,17 @@
 # decls carry the Ren scope; `seen` enforces once-per-path; `rank` rebuilds Ren's preorder.
 ren: {
   scopesNode =
-    isChain: p: r: inst:
+    isChain: argsOf: p: r: inst:
     let
       inherit (builtins)
-        attrNames
         elem
-        filter
         listToAttrs
         ;
       inherit (ren.gen.prelude) nameValuePair;
       parent = p.scope or null;
       pid = if parent == null then null else parent.__scope;
       id = (if pid == null then "" else pid + "/") + ren.gen.assemble.mkId inst.kind inst.name;
-      fields = filter (f: (inst.${f}.__ren or null) == "instance") (attrNames inst);
+      fields = argsOf inst.kind; # README.md#scopes: function-kind arg fields only; no other field is forced
       bindings =
         (p.bindings or { })
         // listToAttrs (map (f: nameValuePair f inst.${f}) fields)
@@ -25,7 +23,7 @@ ren: {
         inherit (inst) name kind;
         instance = inst;
         kinds = isChain inst.kind;
-        inherit parent;
+        parent = if parent == null then null else parent.instance // parent; # its fields too, as Stimpy's parent instance
       };
     in
     if elem inst.__id (p.seen or [ ]) then

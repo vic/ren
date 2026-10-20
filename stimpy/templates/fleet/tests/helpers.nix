@@ -7,8 +7,6 @@ let
     "pkgsOf"
     "usersOn"
     "settingsT"
-    "opt"
-    "maybe"
   ];
   probe =
     (ev (
@@ -17,11 +15,13 @@ let
         ren.aspects.probe = {
           at = ren.fleet.main;
           flake-inputs =
-            { ... }:
+            { lib, ... }:
             {
               probe = {
                 helpers = builtins.filter (n: ren.helpers ? ${n}) names;
                 args = builtins.filter (n: config._module.args ? ${n}) names;
+                opt = (ren.lib.opt lib.types.bool false).default;
+                maybe = (ren.lib.maybe lib.types.str).default;
               };
             };
         };
@@ -38,5 +38,16 @@ in
   test-helpers-not-module-args = {
     expr = probe.args;
     expected = [ ];
+  };
+  # README.md#helpers: option shorthands ship in `ren.lib` (`maybe t` = `opt (nullOr t) null`)
+  test-opt-maybe-in-ren-lib = {
+    expr = [
+      probe.opt
+      probe.maybe
+    ];
+    expected = [
+      false
+      null
+    ];
   };
 }
