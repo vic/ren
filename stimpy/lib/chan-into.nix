@@ -1,4 +1,4 @@
-# fleet.md v35, C6: channel `into` once per receiving scope r with >=1 emission. A key naming a
+# README.md v35, README.md#channels: channel `into` once per receiving scope r with >=1 emission. A key naming a
 # class forwards (as a module) to the nearest ancestor-or-self of r with that class's branch; a key
 # naming another channel is refused; any other key (the channel's own name too) is an output.
 stimpy: {

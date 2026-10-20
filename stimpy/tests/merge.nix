@@ -1,4 +1,4 @@
-# one kind or aspect declared in several files merges (fleet.md v33, vic/ren#19), as in Ren
+# one kind or aspect declared in several files merges (README.md v33, vic/ren#19), as in Ren
 { lib, stimpy }:
 let
   t = lib.types;

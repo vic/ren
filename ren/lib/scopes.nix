@@ -73,7 +73,7 @@ ren: {
             ) (dk i);
           rootNodes = imap0 (mkNode { }) (concatMap insts roots);
           g = G.eval { parseParent = ren.scopesParent; } { children = _: _: { }; } {
-            # gen stamps a spawned node's id, `type` and `parent` (its host); only roots state theirs.
+            # gen stamps a spawned node's id (`bare@parent`, build-nodes.nix:335), `type` and `parent` (its host); only roots state theirs.
             nodes = mapAttrs (
               id: n:
               n

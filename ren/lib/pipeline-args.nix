@@ -1,5 +1,5 @@
 # renArgs: what content fns and class/channel `into` receive at scope `id`.
-# ruling: args = bindings (kind-named + instance-valued fields + parent's) // { parent; name } (fleet-ren.md `into = { <bindings>`); internal scope keys never leak
+# ruling: args = bindings (kind-named + instance-valued fields + parent's) // { parent; name } (README.md#channels `into = { <bindings>`); internal scope keys never leak
 ren: {
   pipelineArgs =
     {

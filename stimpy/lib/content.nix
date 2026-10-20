@@ -1,4 +1,4 @@
-# stratum 2 (fleet.md:96,99-100,426,450,534,575; C5): landed modules + emissions
+# stratum 2 (README.md#kinds, README.md#instances, README.md#features, README.md#gen-mapping, README.md#den-coverage; README.md#aspects): landed modules + emissions
 stimpy: {
   content =
     {
@@ -22,7 +22,7 @@ stimpy: {
         else if channels ? ${k} then
           emitsAt k id
         else
-          throw "ren: unknown key ${k}"; # fleet.md:99
+          throw "ren: unknown key ${k}"; # README.md#instances
       keysOf = a: attrNames (removeAttrs aspects.${a} (lib.splitString " " "at includes excludes __ren"));
       checks =
         br.checks
@@ -30,7 +30,7 @@ stimpy: {
           a:
           lib.optionals (act.active.${a} != [ ]) (
             map (
-              k: lib.any (lands k) act.active.${a} || throw "ren: aspect ${a}: key ${k} lands nowhere" # fleet.md:100
+              k: lib.any (lands k) act.active.${a} || throw "ren: aspect ${a}: key ${k} lands nowhere" # README.md#classes
             ) (keysOf a)
           )
         ) (attrNames aspects);
@@ -70,7 +70,7 @@ stimpy: {
         if isContentFn f then
           f (builtins.intersectAttrs (lib.functionArgs f) args)
         else
-          throw "ren: aspect ${a}: ${c} must be a `{ ... }: v` function"; # C5
+          throw "ren: aspect ${a}: ${c} must be a `{ ... }: v` function"; # README.md#aspects
       perScope = id: concatMap (a: map (k: { inherit a k; }) (keysOf a)) (aspectsAt id);
       landedOf =
         k: f:

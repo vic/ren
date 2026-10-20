@@ -1,4 +1,4 @@
-# One kind or aspect declared in several files merges (fleet.md v33, vic/ren#19).
+# One kind or aspect declared in several files merges (README.md v33, vic/ren#19).
 ren: {
   declTypes =
     let
@@ -22,7 +22,7 @@ ren: {
         }
       );
       # gen-aspects `aspectModules` seam: class options are fixed `nullOr deferredModule`, so the raw
-      # definitions are read here; a bare `final: prev:` class value is refused (fleet.md:454)
+      # definitions are read here; a bare `final: prev:` class value is refused (README.md#features)
       bareClass =
         classes:
         { options, ... }:

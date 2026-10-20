@@ -53,7 +53,7 @@ in
     expected = [ ];
   };
   # row: parent - alice@lb devices = the other 7 parents, scope-path (traversal) order:
-  # fleet.md:448 lists "stage, ci" (stage's own users precede the guest:ci subtree)
+  # README.md#features lists "stage, ci" (stage's own users precede the guest:ci subtree)
   test-devices-alice-lb = {
     expr = r.pools.devices.${aliceLb};
     expected = [
@@ -89,7 +89,7 @@ in
       "studio"
     ];
   };
-  # row: impermanence (set): once each, ci's docker dir not on stage (C1: to = e: e.host)
+  # row: impermanence (set): once each, ci's docker dir not on stage (README.md#features: to = e: e.host)
   test-persist-stage = {
     expr = sorted r.pools.persist.${i.stage};
     expected = sorted [
@@ -111,7 +111,7 @@ in
     expr = lib.elem "/var/lib/docker" r.pools.persist.${i.lb};
     expected = false;
   };
-  # users under mac/phone/home have no `host` binding: they emit nothing to persist (C1)
+  # users under mac/phone/home have no `host` binding: they emit nothing to persist (README.md#features)
   test-persist-receivers-hosts-only = {
     expr = lib.filter (
       id: lib.hasInfix "mac:" id || lib.hasInfix "phone:" id || lib.hasInfix "home:" id
@@ -168,7 +168,7 @@ in
       microvm.url = "github:microvm-nix/microvm.nix";
     };
   };
-  # row: channel into (C6) - one pool per system scope
+  # row: channel into (README.md#channels) - one pool per system scope
   test-packages-pool-receivers = {
     expr = sorted (builtins.attrNames r.pools.packages);
     expected = sorted (

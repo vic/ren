@@ -1,4 +1,4 @@
-# fleet.md v35 strata row 3: one static graph of classes and channels. K -> c / K -> K' when K's
+# README.md v35 strata row 3: one static graph of classes and channels. K -> c / K -> K' when K's
 # `into` returns channel key c / class key K'; c -> K when c's `into` returns class key K.
 stimpy: {
   strata3 =

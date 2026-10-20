@@ -27,8 +27,8 @@ ren: {
           "channel"
         else
           null;
-      # ruling: aspect active nowhere has no scopes to land in, so it is not a landing error (fleet-ren.md:108)
-      # ruling: an unknown key is an error for every aspect (fleet-ren.md:107); `a.content` refuses it (view.nix)
+      # ruling: aspect active nowhere has no scopes to land in, so it is not a landing error (README.md#predicates)
+      # ruling: an unknown key is an error for every aspect (README.md#predicates); `a.content` refuses it (view.nix)
       landed = lib.mapAttrs (
         n: a:
         let
@@ -57,7 +57,7 @@ ren: {
           map (l: C.classModule (renArgs id) (content l.n c)) (filter (l: l.id == id) (at c))
           ++ chan.fwdTo c id;
       };
-      # ruling: channel `at` is the emitter scopes, also for emissions from a class `into` (fleet-ren.md:26,102)
+      # ruling: channel `at` is the emitter scopes, also for emissions from a class `into` (README.md#vocabulary, README.md#aspects)
       outside =
         c: e:
         if channels.${c} ? at && !test channels.${c}.at e.path then

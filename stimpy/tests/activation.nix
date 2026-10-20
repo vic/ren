@@ -25,7 +25,7 @@ in
       v1
     ];
   };
-  # fleet.md:97 no `at` ⟹ inactive unless included
+  # README.md#kinds no `at` ⟹ inactive unless included
   test-no-at = {
     expr =
       (act (_: {
@@ -64,7 +64,7 @@ in
       v1
     ];
   };
-  # fleet.md:105 within = proper ancestor
+  # README.md#channels within = proper ancestor
   test-within-proper = {
     expr =
       (act (ren: {

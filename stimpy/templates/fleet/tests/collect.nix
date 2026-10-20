@@ -15,7 +15,7 @@ in
     expr = sorted r.emitted.deployment;
     expected = sorted i.metals;
   };
-  # nginx active in stage's subtree (fleet.md:102); ci is a host via `is` (fleet.md:91)
+  # nginx active in stage's subtree (README.md#classes); ci is a host via `is` (README.md#vocabulary)
   test-emitted-backends-nginx-hosts = {
     expr = sorted r.emitted.backends;
     expected = sorted [
@@ -44,7 +44,7 @@ in
       ]
     );
   };
-  # C1: persist emitters = hosts + users within a host
+  # README.md#features: persist emitters = hosts + users within a host
   test-emitted-persist-no-mac-phone-home-users = {
     expr = lib.filter (
       id: lib.hasInfix "mac:" id || lib.hasInfix "phone:" id || lib.hasInfix "home:" id
@@ -75,7 +75,7 @@ in
       "web-2"
     ];
   };
-  # `colmena` is a channel (fleet.md:306); its `into` writes `colmenaHive`, which forces
+  # `colmena` is a channel (README.md#hosts); its `into` writes `colmenaHive`, which forces
   # inputs.colmena (unfetched in Tier 1). The node names live in the root pool.
   test-outputs-colmena-nodes = {
     expr = names r.pools.colmena.${i.root};
@@ -227,8 +227,8 @@ in
     expr = r.landed.nixos ? ${i.studio};
     expected = false;
   };
-  # kernel `at = ren.kinds.host` matches ci (guest `is = host`, fleet.md:91);
-  # impermanence `at = metal` = host and not guest (fleet.md:126) does not
+  # kernel `at = ren.kinds.host` matches ci (guest `is = host`, README.md#vocabulary);
+  # impermanence `at = metal` = host and not guest (README.md#topology) does not
   test-landed-nixos-kernel-not-impermanence-on-ci = {
     expr = [
       (has r.landed.nixos.${i.ci} "kernel")
@@ -345,7 +345,7 @@ in
   # UNTESTABLE-T1: microvm.vms.ci.config / bob's ci home absent from stage home-manager.users - forces nixos module values
   # UNTESTABLE-T1: kernel channel from settings (lts/latest) - forces pkgs
   # UNTESTABLE-T1: syncthing tray via `is desktop parent` - forces homeManager module values
-  # UNTESTABLE-T1: per-branch stratum 3 reads outputs (C7: no Fleet branch reads outputs; lib tests use a synthetic vocabulary)
+  # UNTESTABLE-T1: per-branch stratum 3 reads outputs (README.md#expected-results: no Fleet branch reads outputs; lib tests use a synthetic vocabulary)
   # UNTESTABLE-T1: lb haproxy config text "web-1, web-2" - forces a realized nixosSystem (pool order covered in pools.nix)
   # UNTESTABLE-T1: flake-file.inputs as a real option beside nixosConfigurations - flake-file module not in Tier 1
 }

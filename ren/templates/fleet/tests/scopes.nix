@@ -28,7 +28,7 @@ let
     };
 in
 {
-  # row: root kinds (C3) + tree shape; 26 = 8 (root, 3 system, 2 env, home, replica) + 7 machines/phone + 11 users
+  # row: root kinds (README.md#kinds) + tree shape; 26 = 8 (root, 3 system, 2 env, home, replica) + 7 machines/phone + 11 users
   test-scopes-total = {
     expr = lib.length ids;
     expected = 26;

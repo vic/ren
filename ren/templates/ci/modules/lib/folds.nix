@@ -6,7 +6,7 @@ let
 in
 {
   folds = {
-    # list keeps scope traversal order (fleet.md:444: stage's users before its guest:ci), not id string order
+    # list keeps scope traversal order (README.md#features: stage's users before its guest:ci), not id string order
     test-list-orders-by-path = {
       expr = f.list.apply "c" [
         (em "s/user:a" 1)

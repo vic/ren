@@ -35,7 +35,7 @@ in
       pv
     ];
   };
-  # C4: vm binds under vm and its superkind node; parent; __ren.scope
+  # README.md#scopes: vm binds under vm and its superkind node; parent; __ren.scope
   test-bindings-superkind = {
     expr =
       let

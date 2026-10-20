@@ -42,7 +42,7 @@ in
       expectedError.type = "ThrownError";
       expectedError.msg = "emits channel `note` outside its `at`";
     };
-    # branches are disjoint (fleet.md:94): two branches matching one scope is refused
+    # branches are disjoint (README.md#kinds): two branches matching one scope is refused
     test-overlapping-branches = {
       expr =
         (ren.mkFlake inputs (

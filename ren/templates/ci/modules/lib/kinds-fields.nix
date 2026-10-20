@@ -60,7 +60,7 @@ in
         }).guest.g.__id;
       expected = "machine:g";
     };
-    # fleet-ren.md `same a b`: identity is the gen-schema registry id_hash over kind + name
+    # README.md#predicates `same a b`: identity is the gen-schema registry id_hash over kind + name
     test-same-id-hash =
       let
         two = mk {

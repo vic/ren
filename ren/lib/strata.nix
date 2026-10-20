@@ -1,4 +1,4 @@
-# Stratum 3 (fleet-ren.md strata table, row 3): a class branch's `into` reads `outputs` only of
+# Stratum 3 (README.md#evaluation-order row 3): a class branch's `into` reads `outputs` only of
 # class keys it does not forward into; reading one it does is a cycle, refused by a static check on
 # the class graph. Graph edges come from the top-level keys each branch returns (probed lazily).
 ren: {
@@ -67,7 +67,7 @@ ren: {
           else
             v
         ) real;
-      # fleet.md v35 row 3: one graph of classes and channels; K -> c / K -> K' when a K branch's
+      # README.md v35 row 3: one graph of classes and channels; K -> c / K -> K' when a K branch's
       # `into` returns channel key c / class key K', c -> K when c's `into` returns K (chanKeys c)
       cycle =
         chanKeys:

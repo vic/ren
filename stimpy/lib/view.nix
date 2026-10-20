@@ -45,7 +45,7 @@ stimpy: {
               }) (lib.attrNames ms)
             ) insts
           );
-          dup = # fleet.md:448 at most one name per is-family
+          dup = # README.md#features at most one name per is-family
             _: xs:
             lib.length xs == 1
             || throw "ren: duplicate instance name ${(lib.head xs).n} in kinds ${

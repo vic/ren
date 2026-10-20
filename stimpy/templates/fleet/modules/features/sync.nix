@@ -37,7 +37,7 @@ in
         services.syncthing.enable = true;
         services.syncthing.settings.devices = lib.genAttrs devices (n: {
           id = builtins.hashString "sha256" n;
-        }); # C11
+        }); # README.md#features
         services.syncthing.tray.enable = is ren.aspects.desktop parent; # same `is` as everywhere
       };
   };

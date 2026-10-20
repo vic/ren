@@ -1,4 +1,4 @@
-# stratum 3 (fleet.md:90-92,145-152,300-306,427,457; C6): collectors
+# stratum 3 (README.md#open, README.md#topology, README.md#hosts, README.md#features; README.md#channels): collectors
 stimpy: {
   collect =
     args@{
@@ -29,7 +29,7 @@ stimpy: {
           }
         ) st.order
       ) (attrNames classes);
-      # fleet.md:149-152 nearest ancestor-or-self where class j matches; t != s if j == k
+      # README.md#platforms nearest ancestor-or-self where class j matches; t != s if j == k
       target =
         c: j:
         lib.findFirst (t: content.branches.${j}.${t} != null)
@@ -75,7 +75,7 @@ stimpy: {
       outputs = merge.mergeStrict [ ] (
         [ { } ] ++ map (c: removeAttrs c.r (fwdKeys c ++ attrNames channels)) cols ++ chan.outputs
       );
-      # fleet.md:427,457
+      # README.md#features
       checks =
         map (
           c:

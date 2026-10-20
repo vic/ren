@@ -85,7 +85,7 @@ in
       }) (_: { })).outputs;
     expectedError = err;
   };
-  # into-emission feeds pool; C6 channel into once per receiver
+  # into-emission feeds pool; README.md#channels channel into once per receiver
   test-into-emission-and-channel-into =
     let
       r = go (ren: {
