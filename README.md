@@ -59,6 +59,7 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 
 - A kind is typed, strict data. Every field has a type. An unknown or missing field is an error. Freeform is not allowed.
 - `below = [ K … ]` lists the child kinds. This is gen-scope's direction: the parent lists its children.
+- `below` may form a cycle (recursive kinds); an instance appears at most once on a path.
 - `spawns.<K> = s: { <name> = <instance>; }` picks the K children of scope `s`. The default is every instance of K.
 - A `spawns` key that is not in `below` is an error.
 - A root kind has a non-empty `below`, and no `below` lists it. Each of its instances is a root scope.
@@ -223,7 +224,7 @@ to = e: e.host;
 
 | stratum | computes | reads | a cycle inside it is |
 |---|---|---|---|
-| 0 scopes | `below`/`spawns` tree, `is`, `parent`, `within`, `has K` | instances, `same`, `when` on bindings | refused (see [open](#open)) |
+| 0 scopes | `below`/`spawns` tree, `is`, `parent`, `within`, `has K` | instances, `same`, `when` on bindings | an instance twice on a path is an error (see [kinds](#kinds)) |
 | 1 activation | `at`, `includes`, `excludes`, aspect refs | stratum 0 | an error "not stratified" through `not`/`excludes` |
 | 2 content | aspect values, channel folds, `is P x` | strata 0-1, pools (lazy) | Nix infinite recursion, never a wrong value |
 | 3 classes | `into`: forwards, outputs; channel `into` | strata 0-2; `outputs` of classes this branch does not forward into | an error from a static check on one graph of classes and channels |
@@ -283,6 +284,7 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 | inline include | a ref include lands | an inline aspect in `includes` | T [error-inline-include](ren/templates/fleet/tests/errors.nix#L106) |
 | class `lib` | `lib.hm` in home-manager content | Ren's `lib` in class content | E [class-content-sees-class-lib](ren/templates/fleet/tests-e2e/class-lib.nix#L24) |
 | not stratified | — | a cycle through `not`/`excludes` | L [Ren](ren/templates/ci/modules/lib/activation-cycles.nix#L42), [Stimpy](stimpy/tests/activation.nix#L121) |
+| recursive kinds (#49) | `r:y/c1:a/c2:x/c1:b` from a `c1`/`c2` cycle in `below` | an instance twice on one path: `ren: instance a:x twice on path r:y/a:x/a:x` | L [Ren below-cycle-nested-ids](ren/templates/ci/modules/lib/scopes-recursive.nix#L26), [twice-on-path](ren/templates/ci/modules/lib/scopes.nix#L89), [Stimpy below-cycle-nested-ids](stimpy/tests/scopes-recursive.nix#L34), [twice-on-path](stimpy/tests/scopes-recursive.nix#L44) |
 
 ## gen-mapping
 
@@ -388,7 +390,6 @@ Evidence:
 - Overlays on guests. Does microvm's `vms.<n>.pkgs` compose with the guest's `nixpkgs.overlays`? Not checked.
 - Not shown: per-user classes (hjem, maid), wsl. Each is a class plus a predicate.
 - `excludes` is not a Gen term. Gen has no exclude, and nothing in Gen removes an existing include.
-- Cyclic `below`: Stimpy refuses it at declaration. Ren accepts it and refuses an instance twice on a path.
 
 Gen-side issues: [#6 realize classes with gen-delivery](https://github.com/vic/ren/issues/6), [#8 smaller hand-rolled Gen primitives](https://github.com/vic/ren/issues/8), [#13 ordered children and ordered kind ancestors](https://github.com/vic/ren/issues/13).
 

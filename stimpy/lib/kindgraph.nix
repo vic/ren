@@ -15,13 +15,6 @@ stimpy: {
         if lib.isFunction d then d (lib.mapAttrs (n: _: ren.kinds.${n}) (fnArgs K)) else d;
       below = K: map (k: k.__ren.kind) (body K).below or [ ];
       kindsOf = K: [ K ] ++ (if (body K) ? is then kindsOf (body K).is.__ren.kind else [ ]);
-      # README.md#features gen-scope refuses a cyclic or self-naming `below`
-      reach =
-        seen: K:
-        if elem K seen then
-          throw "ren: cycle in below at kind ${K}"
-        else
-          lib.all (reach (seen ++ [ K ])) (below K);
       spawnsOk =
         K:
         let
@@ -37,7 +30,7 @@ stimpy: {
         below
         kindsOf
         ;
-      ok = lib.all (K: reach [ ] K && spawnsOk K) kindNames;
+      ok = lib.all (spawnsOk) kindNames;
       roots = lib.filter (K: below K != [ ] && !elem K listed) kindNames; # README.md#kinds
     };
 }

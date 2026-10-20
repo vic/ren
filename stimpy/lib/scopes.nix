@@ -61,7 +61,7 @@ stimpy: {
         if (i.__ren.kind or null) != C then
           throw "ren: spawns.${C} at ${s.__ren.id}: ${n} is not exactly a ${C}"
         else if elem i.__ren.id s.__ren.instIds then
-          throw "ren: ${i.__ren.id} twice on path ${s.__ren.id}" # README.md#open
+          throw "ren: instance ${lib.replaceStrings [ "/" ] [ ":" ] i.__ren.id} twice on path ${c.__ren.id}" # README.md#kinds
         else if g == null || pred.match ctx g c then
           [ c ]
         else
