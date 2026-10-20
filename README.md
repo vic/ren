@@ -93,6 +93,7 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - The class's own name, and any other key, is a top-level output. Outputs merge by the `attrs` law.
 - Forwards chain (class to class to class). A forward cycle is an error.
 - Class content gets the `lib` of its own module system (for example `lib.hm` in home-manager), not Ren's.
+- `ms` are modules (`{ imports = [ fn ]; _file; }`). An `into` that writes into a config-only submodule (`users.users.<n>`) uses `ren.lib.flatten args ms`: it calls each content function with `args` (the module args of the module that holds the write; name `pkgs` there if content needs it), drops `imports`/`_file`/`key`, and returns one `mkMerge` value (#59).
 - Class names and channel names are disjoint.
 
 ### channels
@@ -128,6 +129,8 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - `within P`: a proper ancestor matches P. `has P`: a child matches P.
 - `same a b` is identity (gen-schema `id_hash`). It needs no scope, so it works on data kinds and inside `spawns`.
 - `is P x`: the scope of x on the current path (nearest ancestor-or-self) matches P. No such scope is an error.
+- `nearest K s`: the instance of the nearest ancestor-or-self scope of `s` that matches K (a kind ref follows `is`: a guest is a machine), or null. `s` must be a scope (#57).
+- `upTo K e` is `and [ K (anyOf [ e (has e) ]) ]`: e itself if it is a K, and the K that e is a child of. A guest in a host gives both (#58).
 - Aspect refs are stratified. A cycle through `not` or `excludes` is an error ("not stratified").
 
 ### folds
@@ -288,6 +291,9 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 | class `lib` | `lib.hm` in home-manager content | Ren's `lib` in class content | E [class-content-sees-class-lib](ren/templates/fleet/tests-e2e/class-lib.nix#L24) |
 | not stratified | — | a cycle through `not`/`excludes` | L [Ren](ren/templates/ci/modules/lib/activation-cycles.nix#L42), [Stimpy](stimpy/tests/activation.nix#L121) |
 | recursive kinds (#49) | `r:y/c1:a/c2:x/c1:b` from a `c1`/`c2` cycle in `below` | an instance twice on one path: `ren: instance a:x twice on path r:y/a:x/a:x` | L [Ren below-cycle-nested-ids](ren/templates/ci/modules/lib/scopes-recursive.nix#L26), [twice-on-path](ren/templates/ci/modules/lib/scopes.nix#L89), [Stimpy below-cycle-nested-ids](stimpy/tests/scopes-recursive.nix#L34), [twice-on-path](stimpy/tests/scopes-recursive.nix#L44) |
+| `nearest` (#57) | bob on ci gets `guest:ci` as machine, `environment:staging` as environment; null at the root | stage for bob on ci; a value for a bare instance | T [nearest](ren/templates/fleet/tests/nearest.nix), L [Ren](ren/templates/ci/modules/lib/predicates-nearest.nix), [Stimpy](stimpy/tests/nearest.nix) |
+| `upTo` (#58) | a user on stage reaches stage; stage reaches itself; ci reaches ci and stage | a user's host for its sibling host | T [upTo-machine](ren/templates/fleet/tests/nearest.nix), L [Ren](ren/templates/ci/modules/lib/predicates-nearest.nix), [Stimpy](stimpy/tests/nearest.nix) |
+| `flatten` (#59) | an `account` class writes `users.users.alice` on lb: content fn with the class `lib` plus a plain value | "The option `users.users.alice.imports' does not exist" | E [flatten](ren/templates/fleet/tests-e2e/flatten.nix), L [Ren](ren/templates/ci/modules/lib/flatten.nix), [Stimpy](stimpy/tests/flatten.nix) |
 
 ## gen-mapping
 

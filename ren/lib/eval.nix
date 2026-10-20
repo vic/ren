@@ -37,9 +37,12 @@ ren: {
           when
           within
           has
+          upTo
           same
           fold
+          flatten
           ;
+        inherit (p) nearest;
         # ruling: `is P x` on a scope tests P at that scope (README.md#expected-results); an instance needs content's `is`
         is = P: x: if (x.__ren or null) == "scope" then p.test P x.__scope else ren.is P x;
         data = inst: removeAttrs inst ren.internals; # an instance's kind fields alone (#23)

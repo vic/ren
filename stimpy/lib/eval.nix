@@ -27,8 +27,8 @@ stimpy: {
           has
           same
           ;
-        is = pred.is ctx;
-        inherit (stimpy) data;
+        inherit (stimpy.scoped ctx) is nearest;
+        inherit (stimpy) data flatten upTo;
         fold = stimpy.folds;
         # #48: lazy RESULT, no `outputs` (guarded `into` arg); deciding kinds or `at` from it cycles
         result = removeAttrs res [ "outputs" ];
