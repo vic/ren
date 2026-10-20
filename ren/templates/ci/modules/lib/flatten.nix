@@ -56,5 +56,23 @@ in
       expr = eval (lib.mkMerge ms);
       expectedError.type = "ThrownError";
     };
+    # #77: list content; the empty wrapper remainder is no `{ }` definition
+    test-flatten-into-list = {
+      expr =
+        (lib.evalModules {
+          modules = [
+            { options.xs = lib.mkOption { type = t.listOf t.str; }; }
+            {
+              xs = ren.flatten { } [
+                {
+                  _file = "f";
+                  imports = [ ({ ... }: [ "a" ]) ];
+                }
+              ];
+            }
+          ];
+        }).config.xs;
+      expected = [ "a" ];
+    };
   };
 }
