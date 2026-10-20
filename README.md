@@ -234,7 +234,7 @@ Two words have two meanings. Both are tracked in [#68](https://github.com/vic/re
 - `ms` are modules (`{ imports = [ fn ]; _file; }`).
 - An `into` that writes into a config-only submodule (`users.users.<n>`) uses `ren.lib.flatten args ms`. `flatten` does three things:
   - It calls each content function with `args`. `args` are the module args of the module that holds the write. If content needs `pkgs`, name `pkgs` there.
-  - It drops `imports`, `_file` and `key`.
+  - It drops `imports`, `_file` and `key`. An empty remainder adds no definition, so list content (for example a `listOf package` option) works.
   - It returns one `mkMerge` value.
 - Class names and channel names are disjoint.
 

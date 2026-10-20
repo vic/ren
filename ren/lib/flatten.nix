@@ -11,16 +11,15 @@ ren: {
         if lib.isFunction m then
           go (m (builtins.intersectAttrs (lib.functionArgs m) args))
         else if builtins.isAttrs m && !(m ? _type) then
-          lib.mkMerge (
-            [
-              (removeAttrs m [
-                "imports"
-                "_file"
-                "key"
-              ])
-            ]
-            ++ map go (m.imports or [ ])
-          )
+          let
+            rest = removeAttrs m [
+              "imports"
+              "_file"
+              "key"
+            ];
+          in
+          # an empty remainder (the content wrapper) is no `{ }` definition: a list option refuses one (#77)
+          lib.mkMerge (lib.optional (rest != { }) rest ++ map go (m.imports or [ ]))
         else
           m;
     in
