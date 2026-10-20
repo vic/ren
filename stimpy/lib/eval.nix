@@ -82,7 +82,7 @@ stimpy: {
         inherit (pl) pools;
       };
       c0 = lib.all lib.id ren.__ren.checks;
-      c2 = c0 && lib.all lib.id content.checks;
+      c2 = c0 && lib.all lib.id content.checks && col.cycle; # a stratum-3 cycle is named before pools
       c3 = c2 && lib.all lib.id col.checks;
       after = ok: lib.mapAttrs (_: builtins.seq ok);
     in

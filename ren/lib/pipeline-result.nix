@@ -27,8 +27,9 @@ ren: {
       pos = listToAttrs (lib.imap0 (i: id: lib.nameValuePair id i) sc.order);
       inOrder = ids: sort (a: b: pos.${a} < pos.${b}) (lib.unique ids);
       byScope = f: ids: lib.genAttrs ids f;
-      # landing errors (unknown key, key landing nowhere) come before landing-derived data
-      checked = f: mapAttrs (_: seq (builtins.deepSeq o.landed null)) f;
+      # landing errors (unknown key, key landing nowhere) come before landing-derived data,
+      # then the stratum-3 cycle check (so reading only `pools` names a cycle too)
+      checked = f: mapAttrs (_: v: seq (builtins.deepSeq o.landed null) (seq o.cycle v)) f;
     in
     {
       inherit (o) outputs;

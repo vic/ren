@@ -1,6 +1,12 @@
-# Ren fleet demo — v34 (2026-10-19) — EXPLORATION: reduced surface (genie v29.A adopted)
+# Ren fleet demo — v35 (2026-10-19) — EXPLORATION: reduced surface (genie v29.A adopted)
 
 v29.A = genie's fork of vic's v29 (gist `fbc69bfc`). It keeps v29's reduction and fixes the places where a rename to a Gen term inverted or overloaded that term. v29 explores how far the surface can shrink. **The previous version is backed up as `vic/fleet-v28.md`**, and we may revert to it. v29 renames words to Gen's own terms only where Gen means the same thing. It merges words that did the same job, and makes the rest relate to each other. Design only; nothing implements it. Feedback goes after `> VIC:` lines.
+
+## What changed from v34 (#39)
+
+- A channel `into` key that names a class forwards, as class content (a module), to the nearest ancestor-or-self of the receiving scope where that class has a branch, as a class forward does. A key that names another channel is refused. Any other key is a top-level output, as before.
+- Stratum 3's static check runs on one graph of classes and channels, so a class-channel cycle is refused by name.
+- `flake-file` is a class at the root, fed by the `flake-inputs` channel (as vix does). It writes the top-level `flake-file` output.
 
 ## What changed from v30
 
@@ -99,6 +105,7 @@ That is one more than v29, because `same` comes back. `is` still covers kind sub
   - `at` is the emitter scopes; the default is any scope.
   - `to = e: <predicate>` gives the receivers.
   - `fold` is `list` (ordered by scope path), `set`, `attrs` (recursive, conflict = error) or `one`.
+  - `into = { <bindings>, ... }: pool: { … }` (optional) runs once per receiving scope with the folded pool. A returned key that names a class forwards, as class content, to the nearest ancestor-or-self of the receiving scope where that class has a branch; if no such scope exists, it is an error that names the channel, the class and the scope. A key that names another channel is an error that names both channels. Any other key (the channel's own name too) is a top-level output.
 - **aspects**: `at` activates. An aspect without `at` fires only where it is included.
   - `includes` and `excludes` work in the aspect's scopes and their subtrees.
   - A key naming a class is config; a key naming a channel is an emission; any other key is an error.
@@ -208,6 +215,11 @@ ren.lib.mkFlake inputs {
       };
     };
 
+    flake-file = {                                               # fed by the `flake-inputs` channel; writes its own name
+      at   = ren.kinds.fleet;
+      into = { ... }: ms: { flake-file = (lib.evalModules { modules = ms ++ [ { freeformType = t.attrsOf (t.attrsOf t.raw); } ]; }).config; };
+    };
+
     checks = {                                                   # each content key = one VM test at `checks.<sys>.<name>`
       at   = ren.kinds.system;
       into = { system, ... }: ms:
@@ -313,7 +325,7 @@ ren.lib.mkFlake inputs {
     overlays     = { fold = list;  at = ren.kinds.fleet;   to = _: ren.kinds.machine; };
     persist      = { fold = set;   at = anyOf [ ren.kinds.host ren.kinds.user ]; to = e: e.host; };
     flake-inputs = { fold = attrs; to = _: ren.fleet.main;          # no `at`: any scope emits
-                     into = { ... }: inputs': { flake-file.inputs = inputs'; }; };
+                     into = { ... }: inputs': { flake-file.inputs = inputs'; }; };   # a class key: forwarded to the flake-file class
     tags         = { fold = set;   to = e: e; };
     generators   = { fold = attrs; to = _: ren.fleet.main;          # no `at`: one plan; at a host = per-machine, at the root = shared
                      into = { ... }: plan: { vars = plan; }; };
@@ -456,7 +468,7 @@ ren.lib.mkFlake inputs {
 | 0 scopes | `below`/`spawns` tree, `is` (subkind), `parent`, `within`, `has K` | instances, `same` (id_hash, needs no scope), `when` on bindings | impossible: gen-scope refuses a cyclic or self-naming `below` |
 | 1 activation | `at`, `includes`, `excludes`, `has` in predicates | stratum 0 | an eval error "not stratified" if it passes through `not`/`excludes` |
 | 2 content | aspect values, channels (`fold`), `is P x`, `aspects` | strata 0–1, channels (lazy) | Nix infinite recursion: never a wrong value |
-| 3 classes | `into`: forwards, flake outputs | strata 0–2, and `outputs` of classes this branch does not forward into | an eval error: a static check on the class graph |
+| 3 classes | `into`: forwards, flake outputs; channel `into` | strata 0–2, and `outputs` of classes this branch does not forward into | an eval error: a static check on one graph of classes and channels. Edge K→c / K→K': a K branch's `into` returns channel key c / class key K' (not its own name); edge c→K: c's `into` returns class key K. Keys are probed without forcing `ms`, the pool or `outputs`. A cycle is refused with the full cycle: ``ren: stratum 3 cycle: class `K` -> channel `c` -> class `K` `` |
 
 `docker`'s `has ren.user.bob` sits in stratum 0. It reads the same spawns result that put bob there, so it can't drift from the grant rule.
 
@@ -482,7 +494,7 @@ ren.lib.mkFlake inputs {
 | content-function rule | — | a bare `final: prev:` value evaluating as content |
 | hmPlatforms (`homeDarwin`) | aerospace in alice's and bob's homes on studio only | aerospace in any linux, phone or standalone home |
 | tags = emission | colmena tags for stage include `web` (nginx emits it) | a `tags` key reserved by Ren |
-| flake-file | `flake-file.inputs.{agenix,microvm}` written once, a top-level option beside `nixosConfigurations` | an input listed by an aspect that is not active; two aspects giving `agenix` different urls evaluating |
+| flake-file | `flake-file.inputs.{agenix,microvm}` written once by the `flake-file` class at the root, fed by the `flake-inputs` channel | an input listed by an aspect that is not active; two aspects giving `agenix` different urls evaluating |
 | recursive `attrs` | `deploy.nodes.{lb,web-1,web-2,stage}` and `colmena.{…}` merged from four host scopes; `agenix = { url; inputs.nixpkgs.follows; }` from two aspects that agree on `url` | a conflict error between hosts for the top-level `deploy` key |
 | `anywhere` | a `flake-inputs` emission from an aspect `at = ren.fleet.main` reaches `flake-file.inputs` | root-scope emissions dropped because `within` excludes the root |
 | `attrs` in `into` | `packages.x86_64-linux` built from two aspects' attrsets | two aspects giving different `hello` derivations evaluating (v27's `mergeAttrsList` kept the last) |
@@ -493,6 +505,9 @@ ren.lib.mkFlake inputs {
 | `is P x` on the path | stage users' syncthing tray on (desktop active on `parent`) | `is` picking one of alice's other scopes |
 | `anyOf` | — | Ren exporting `any` (gen-select's tombstone; clashes with `lib.any`) |
 | channel `into` | `packages.<sys>.hello` from the `packages` channel; `colmenaHive` and `ageManifest` fed by the nixos class | `tools.packages` evaluated as a module (`deferredModule`) |
+| channel `into` forward (v35) | `flake-inputs`'s `into` returns `flake-file.inputs`; it is forwarded as content to the `flake-file` class at the root, which writes `outputs.flake-file.inputs` | a class key in a channel `into` refused, or written as a top-level output; a forward with no scope that has the class's branch evaluating |
+| channel-to-channel key (v35) | — | a channel `into` that returns another channel's key evaluating (the error names both channels) |
+| class-channel cycle (v35) | — | class K emits channel c and c's `into` forwards to K, evaluating (refused: ``ren: stratum 3 cycle: class `K` -> channel `c` -> class `K` ``) |
 | hosts from JSON (#31) | `host:web-1`, `host:web-2` under prod, read from `_inventory.json`; names looked up as refs (`ren.environment.${name}`) | a string where a ref belongs evaluating (`environment = "prod"` is refused: not an instance of kind environment) |
 | generated values (#28) | one `vars` output: `vars.shared.ca` (declared at `ren.fleet.main`); `vars.per-machine.{lb,web-1,web-2,stage}.deploy-key` (declared by `deploy-record`) | a per-machine entry for ci or studio; values generated at eval (generation is a CLI job) |
 | VM checks (#32): tests defined on aspects, class `checks` writes its own name | `checks.x86_64-linux.web`: a `runNixOSTest` with nodes `client`, `web` (evaluated, not run) | a check under `aarch64-linux` or `aarch64-darwin` |
