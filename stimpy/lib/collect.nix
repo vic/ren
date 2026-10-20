@@ -1,7 +1,7 @@
 # stratum 3 (fleet.md:90-92,145-152,300-306,427,457; C6): collectors
 stimpy: {
   collect =
-    {
+    args@{
       ren,
       st,
       content,
@@ -21,7 +21,7 @@ stimpy: {
           let
             i = content.branches.${k}.${id};
             into = (lib.elemAt (lib.toList classes.${k}) i).into;
-            ms = content.modules.${k}.${id} or [ ] ++ map (f: f.m) (fwdInto k id);
+            ms = content.modules.${k}.${id} or [ ] ++ map (f: f.m) (fwdInto k id) ++ chan.fwdInto k id;
           in
           lib.optional (i != null) {
             inherit k id into;
@@ -71,15 +71,9 @@ stimpy: {
           }
         ) cols
       ) channels;
-      # C6: channel into once per receiving scope with >=1 emission
-      chanOuts = concatMap (
-        ch:
-        lib.optionals (channels.${ch} ? into) (
-          lib.mapAttrsToList (r: pool: call channels.${ch}.into (argsAt r) pool) pools.${ch}
-        )
-      ) (attrNames channels);
+      chan = stimpy.chanInto (args // { inherit call cols; });
       outputs = merge.mergeStrict [ ] (
-        [ { } ] ++ map (c: removeAttrs c.r (fwdKeys c ++ attrNames channels)) cols ++ chanOuts
+        [ { } ] ++ map (c: removeAttrs c.r (fwdKeys c ++ attrNames channels)) cols ++ chan.outputs
       );
       # fleet.md:427,457
       checks =
@@ -88,10 +82,12 @@ stimpy: {
           !(lib.functionArgs c.into ? outputs && fwdKeys c != [ ])
           || throw "ren: stratum 3 cycle: ${c.k} at ${c.id} reads outputs and forwards"
         ) cols
-        ++ map (f: builtins.seq f.t true) fwds;
+        ++ map (f: builtins.seq f.t true) fwds
+        ++ [ chan.cycle ];
     in
     {
       inherit outputs intoEmissions checks;
+      inherit (chan) cycle;
       forwarded = lib.mapAttrs (
         j: _: lib.mapAttrs (_: map (f: f.from)) (lib.groupBy (f: f.t) (filter (f: f.j == j) fwds))
       ) classes;

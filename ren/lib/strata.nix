@@ -22,7 +22,8 @@ ren: {
         filter
         head
         ;
-      inherit (ren.gen.graph) reachableFrom;
+      inherit (ren.gen.graph) reachableFrom cyclePaths;
+      chanOf = filter (k: channels ? ${k});
       classNames = attrNames classes;
       # per class, per branch: the scopes it runs at and the top-level keys it returns there
       info = lib.mapAttrs (
@@ -66,5 +67,30 @@ ren: {
           else
             v
         ) real;
+      # fleet.md v35 row 3: one graph of classes and channels; K -> c / K -> K' when a K branch's
+      # `into` returns channel key c / class key K', c -> K when c's `into` returns K (chanKeys c)
+      cycle =
+        chanKeys:
+        let
+          label = kind: map (n: "${kind} `${n}`");
+          # K's own name forwards strictly up the scope tree (never to itself): not an edge
+          out = k: filter (j: j != k) (concatMap (bi: bi.keys) info.${k});
+          edges = builtins.listToAttrs (
+            map (
+              k:
+              lib.nameValuePair "class `${k}`" (label "channel" (chanOf (out k)) ++ label "class" (fwdOf (out k)))
+            ) classNames
+            ++ map (c: lib.nameValuePair "channel `${c}`" (label "class" (chanKeys c))) (attrNames channels)
+          );
+          paths = cyclePaths {
+            nodes = attrNames edges;
+            edges = n: builtins.sort builtins.lessThan (lib.unique edges.${n});
+          };
+          # a cycle starting at a channel ("channel `" < "class `") is printed from the next class
+          p = head (builtins.sort (a: b: head a < head b) paths);
+          q = if builtins.substring 0 7 (head p) == "channel" then builtins.tail p ++ [ (head p) ] else p;
+          shown = q ++ [ (head q) ];
+        in
+        paths == [ ] || throw "ren: stratum 3 cycle: ${builtins.concatStringsSep " -> " shown}";
     };
 }

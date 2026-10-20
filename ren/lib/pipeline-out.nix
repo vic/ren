@@ -1,7 +1,7 @@
 # pipeline tail: emissions -> pools -> class collect -> channel `into` -> merged outputs.
 ren: {
   pipelineOut =
-    {
+    args@{
       lib,
       L,
       C,
@@ -53,7 +53,9 @@ ren: {
         renArgsAt = renArgs;
         argsFor = c: id: { outputs = strata.outputsFor outputs c id; };
         contentModules =
-          c: id: map (l: C.classModule (renArgs id) (content l.n c)) (filter (l: l.id == id) (at c));
+          c: id:
+          map (l: C.classModule (renArgs id) (content l.n c)) (filter (l: l.id == id) (at c))
+          ++ chan.fwdTo c id;
       };
       # ruling: channel `at` is the emitter scopes, also for emissions from a class `into` (fleet-ren.md:26,102)
       outside =
@@ -74,27 +76,19 @@ ren: {
         )
       ) channels;
       pools = C.mkPools { inherit channels emissions receivers; } sc.order;
-      # ruling: a channel `into` result is top-level outputs only in v1; class/channel keys are refused (fleet-ren.md:100)
-      chanFrag =
-        c: r:
-        let
-          res = channels.${c}.into (renArgs r) (pools.${c} r);
-          # ruling: the channel's own name is its top-level output (`packages` into -> `packages.<sys>`, fleet-ren.md:308-309,471)
-          bad = filter (k: k != c && (classes ? ${k} || channels ? ${k})) (attrNames res);
-        in
-        if bad != [ ] then
-          throw "ren: channel `${c}` into: key `${builtins.head bad}` must be a top-level output"
-        else
-          res;
-      chanFrags = concatMap (c: map (chanFrag c) (lib.unique (concatMap (receivers c) emissions.${c}))) (
-        filter (c: channels.${c} ? into) (attrNames channels)
-      );
+      chan = ren.pipelineChan (args // { inherit pools emissions; });
+      cycle = strata.cycle chan.classKeys;
       outputs = builtins.seq (builtins.deepSeq landed null) (
-        L.mergeOutputs ([ collect.outputs ] ++ chanFrags)
+        builtins.seq cycle (L.mergeOutputs ([ collect.outputs ] ++ chan.outputs))
       );
     in
     {
-      inherit pools outputs emissions;
+      inherit
+        pools
+        outputs
+        emissions
+        cycle
+        ;
       inherit landed collect;
     };
 }
