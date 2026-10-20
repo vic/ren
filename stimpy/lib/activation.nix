@@ -1,4 +1,4 @@
-# stratum 1 (fleet.md:97-98,104,425): aspect activation, stratified
+# stratum 1 (README.md#kinds, README.md#channels, README.md#features): aspect activation, stratified
 stimpy: {
   activation =
     {
@@ -41,7 +41,7 @@ stimpy: {
         )
       );
       scc = a: [ a ] ++ filter (b: b != a && elem b reach.${a} && elem a reach.${b}) names;
-      # fleet.md:104 a negative cycle is an error
+      # README.md#channels a negative cycle is an error
       negCycle = lib.unique (
         concatMap (
           a: concatMap (d: lib.optional (!d.positive && elem a reach.${d.aspect}) a) deps.${a}

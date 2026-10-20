@@ -65,11 +65,11 @@ ren: {
             inherit body;
           };
         };
-      # ruling: `is P x` needs the current path (fleet-ren.md:113); only a scope x carries one, load.nix tests it
+      # ruling: `is P x` needs the current path (README.md#predicates); only a scope x carries one, load.nix tests it
       is =
         _: _:
         throw "ren: `is P x` with an instance needs the scope-local `is` from content args ({ is, ... }:)";
-      # fleet-ren.md `same a b`: gen-schema id_hash identity (registry entry, kinds-check.nix)
+      # README.md#predicates `same a b`: gen-schema id_hash identity (registry entry, kinds-check.nix)
       same = a: b: a.id_hash == b.id_hash;
       # gen-select's scope adapter: `data` = the Ren scope plus __identity (instance entry, kind value)
       mkCtx =

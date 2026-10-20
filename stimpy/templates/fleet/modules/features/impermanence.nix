@@ -19,7 +19,7 @@ in
       ])
     ];
     to = e: e.host;
-  }; # C1
+  }; # README.md#features
 
   ren.aspects.impermanence = {
     at = metal;

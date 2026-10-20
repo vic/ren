@@ -16,7 +16,7 @@ stimpy: {
       ];
     in
     rec {
-      # fleet.md:249 function kind `{ db, region }: when p { }`: args = ref fields typed by kinds.<arg>;
+      # README.md#topology function kind `{ db, region }: when p { }`: args = ref fields typed by kinds.<arg>;
       # body = `when p` applied to fields ⟹ fields // { __guard = p; } (pred `when` node is a functor).
       decl =
         K:

@@ -62,7 +62,7 @@ in
   ren.aspects.hm-state = {
     at = ren.kinds.user;
     homeManager.home.stateVersion = "25.05";
-  }; # C9
+  }; # README.md#platforms
   ren.aspects.hm-standalone = {
     at = and [
       ren.kinds.user
@@ -74,5 +74,5 @@ in
         home.username = user.name;
         home.homeDirectory = "/home/${user.name}";
       };
-  }; # C12
+  }; # README.md#platforms
 }

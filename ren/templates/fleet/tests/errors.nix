@@ -35,7 +35,7 @@ in
       )
     )
   );
-  # row: content-function rule (C5) - a bare `final: prev:` emission is not content
+  # row: content-function rule (README.md#aspects) - a bare `final: prev:` emission is not content
   # pools are lazy (design: fold on read), so force the elements, not just the spine
   test-error-bare-overlay-function = thrown (
     (x: builtins.deepSeq x (builtins.length x))

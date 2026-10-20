@@ -6,7 +6,7 @@
       ren.kinds.machine
       ren.kinds.user
     ];
-    # C8
+    # README.md#features
     os =
       { pkgs, ... }:
       {

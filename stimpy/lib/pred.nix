@@ -64,7 +64,7 @@ stimpy: {
       and = node "and";
       anyOf = node "anyOf";
       not = node "not";
-      # fleet.md:249 function kind: `when p { fields }` tags fields with the guard
+      # README.md#topology function kind: `when p { fields }` tags fields with the guard
       when =
         f:
         node "when" f

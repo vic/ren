@@ -1,5 +1,5 @@
 # evalFleet: fleet module -> view -> pipeline -> RESULT (scopes active landed forwarded emitted pools branches outputs).
-# ruling: the fleet is a module; `ren` = `_module.args.ren` (fleet.md:134,579), replacing the two-pass loader.
+# ruling: the fleet is a module; `ren` = `_module.args.ren` (README.md#topology, README.md#den-coverage), replacing the two-pass loader.
 # ruling: module evaluation uses Gen's gen-merge (evalModuleTree); Ren depends on Gen only.
 ren: {
   mkFlake = inputs: module: (ren.evalFleet inputs module).outputs;
@@ -40,11 +40,11 @@ ren: {
           same
           fold
           ;
-        # ruling: `is P x` on a scope tests P at that scope (fleet-ren.md:467); an instance needs content's `is`
+        # ruling: `is P x` on a scope tests P at that scope (README.md#expected-results); an instance needs content's `is`
         is = P: x: if (x.__ren or null) == "scope" then p.test P x.__scope else ren.is P x;
         data = inst: removeAttrs inst ren.internals; # an instance's kind fields alone (#23)
       };
-      # ruling: `ren.<kind>` exists for every declared kind (empty when it has no instances) (fleet-ren.md:95)
+      # ruling: `ren.<kind>` exists for every declared kind (empty when it has no instances) (README.md#channels)
       world = p.instances // {
         lib = renLib;
         inherit (p) kinds;

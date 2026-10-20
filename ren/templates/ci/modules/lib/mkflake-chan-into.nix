@@ -1,6 +1,6 @@
 { ren, lib }:
 let
-  # mini fleet (fleet.md v35 channel vocabulary): a channel `into` key that names a class forwards
+  # mini fleet (README.md v35 channel vocabulary): a channel `into` key that names a class forwards
   # to the nearest ancestor-or-self scope with that class's branch; a channel key is refused.
   mini =
     extra:

@@ -1,4 +1,4 @@
-# fleet.md v35: a channel `into` key naming a class forwards to the nearest ancestor-or-self scope
+# README.md v35: a channel `into` key naming a class forwards to the nearest ancestor-or-self scope
 # with that class's branch; a channel key is refused; a class-channel cycle is refused by name
 { lib, stimpy }:
 let

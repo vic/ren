@@ -1,4 +1,4 @@
-# stratum 0 (fleet.md:84-88,424; C3 C4): below/spawns tree of scopes
+# stratum 0 (README.md#vocabulary, README.md#features; README.md#kinds README.md#scopes): below/spawns tree of scopes
 stimpy: {
   scopes =
     {
@@ -35,7 +35,7 @@ stimpy: {
           self =
             removeAttrs (if parent == null then { } else parent) [ "__ren" ]
             // lib.mapAttrs (a: _: inst.${a}) (fnArgs K)
-            // lib.genAttrs (kindsOf K) (_: me) # C4 nearest wins
+            // lib.genAttrs (kindsOf K) (_: me) # README.md#scopes nearest wins
             // lib.optionalAttrs (parent != null) { parent = up.inst; }
             // {
               __ren = {
@@ -61,7 +61,7 @@ stimpy: {
         if (i.__ren.kind or null) != C then
           throw "ren: spawns.${C} at ${s.__ren.id}: ${n} is not exactly a ${C}"
         else if elem i.__ren.id s.__ren.instIds then
-          throw "ren: ${i.__ren.id} twice on path ${s.__ren.id}" # fleet.md:88
+          throw "ren: ${i.__ren.id} twice on path ${s.__ren.id}" # README.md#open
         else if g == null || pred.match ctx g c then
           [ c ]
         else

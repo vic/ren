@@ -1,4 +1,4 @@
-# class branches (fleet.md:90) + name checks (fleet.md:534,575)
+# class branches (README.md#open) + name checks (README.md#gen-mapping, README.md#den-coverage)
 stimpy: {
   branches =
     {

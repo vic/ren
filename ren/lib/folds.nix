@@ -1,5 +1,5 @@
 # Channel folds: { __ren = "fold"; name; apply = channelName: emissions: value; }
-# emissions = [ { path = "<scope id>"; value; } ] in scope traversal order (mkPools sorts; fleet.md:444).
+# emissions = [ { path = "<scope id>"; value; } ] in scope traversal order (mkPools sorts; README.md#features).
 ren: {
   folds =
     let

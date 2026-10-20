@@ -1,4 +1,4 @@
-# fleet.md v35: flake-file is a class at the root, fed by the `flake-inputs` channel `into`.
+# README.md v35: flake-file is a class at the root, fed by the `flake-inputs` channel `into`.
 { ev, r, ... }:
 let
   i = import ./_ids.nix;

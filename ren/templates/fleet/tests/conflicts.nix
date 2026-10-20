@@ -18,7 +18,7 @@ let
         };
       }
     )).outputs.probe-out.leaf;
-  # two features emit attrsets into one attrs-folded channel, like `packages` (fleet.md:460)
+  # two features emit attrsets into one attrs-folded channel, like `packages` (README.md#features)
   intoHello =
     a: b:
     (ev (
@@ -42,22 +42,22 @@ let
     )).outputs.probe-pkgs.x86_64-linux.hello;
 in
 {
-  # control: equal leaves from many scopes merge (fleet.md:96 top-level keys merge by `attrs`)
+  # control: equal leaves from many scopes merge (README.md#kinds top-level keys merge by `attrs`)
   test-output-merge-equal-leaf = {
     expr = outLeaf (_: "same");
     expected = "same";
   };
-  # fleet.md:453,100: two scopes writing different values at one output path is an error
+  # README.md#features, README.md#classes: two scopes writing different values at one output path is an error
   test-output-merge-conflict = {
     expr = outLeaf (h: h.name);
     expectedError.type = "ThrownError";
   };
-  # control: two features that agree merge (fleet.md:458)
+  # control: two features that agree merge (README.md#features)
   test-into-attrs-equal-leaf = {
     expr = intoHello "a" "a";
     expected = "a";
   };
-  # fleet.md:460,100: two features giving different `hello` into one attrs pool is an error
+  # README.md#features, README.md#classes: two features giving different `hello` into one attrs pool is an error
   test-into-attrs-conflict = {
     expr = intoHello "a" "b";
     expectedError.type = "ThrownError";

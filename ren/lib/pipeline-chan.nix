@@ -1,4 +1,4 @@
-# Channel `into` (fleet.md v35), once per receiving scope r with the folded pool. A returned key that
+# Channel `into` (README.md v35), once per receiving scope r with the folded pool. A returned key that
 # names a class forwards (as a module) to the nearest ancestor-or-self of r with that class's branch;
 # one naming another channel is refused; any other key (the channel's own name too) is an output.
 ren: {

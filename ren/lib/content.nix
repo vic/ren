@@ -49,7 +49,7 @@ ren: {
           pos = builtins.listToAttrs (
             ren.gen.prelude.imap0 (i: id: ren.gen.prelude.nameValuePair id i) order
           );
-          # folds see emissions in scope traversal order (fleet.md:444); sort is stable within a scope
+          # folds see emissions in scope traversal order (README.md#features); sort is stable within a scope
           inOrder = builtins.sort (a: b: pos.${a.path} < pos.${b.path});
         in
         builtins.mapAttrs (

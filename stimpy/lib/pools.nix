@@ -1,4 +1,4 @@
-# pools (fleet.md:95-96): pool(c, r) = fold_c [ v(e) | e emits c, r matches `to e` ], path order
+# pools (README.md#kinds): pool(c, r) = fold_c [ v(e) | e emits c, r matches `to e` ], path order
 stimpy: {
   pools =
     {

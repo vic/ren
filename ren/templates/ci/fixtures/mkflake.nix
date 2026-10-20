@@ -91,7 +91,7 @@ rec {
       }
       // extra ren;
     };
-  # module form (fleet.md:134): the fleet is a module, inputs carry the nixpkgs lib
+  # module form (README.md#topology): the fleet is a module, inputs carry the nixpkgs lib
   inputs.nixpkgs = { inherit lib; };
   run = extra: ren.mkFlake inputs (fleet extra);
   out = run (_: { });

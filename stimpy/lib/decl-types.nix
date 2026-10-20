@@ -1,4 +1,4 @@
-# One kind or aspect declared in several files merges (fleet.md v33), with Ren's semantics.
+# One kind or aspect declared in several files merges (README.md v33), with Ren's semantics.
 stimpy: {
   declTypes =
     let
@@ -15,7 +15,7 @@ stimpy: {
         f:
         lib.isFunction f
         && (lib.hasInfix "<attrspat" (builtins.toXML f) || f ? __functionArgs || f ? __functor);
-      # class content: every file's module, in definition order; a bare `final: prev:` is refused (C5)
+      # class content: every file's module, in definition order; a bare `final: prev:` is refused (README.md#aspects)
       modules = lib.mkOptionType {
         name = "classContent";
         merge =

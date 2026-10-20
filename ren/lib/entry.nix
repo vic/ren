@@ -13,7 +13,7 @@ ren: {
       options.fleet = lib.mkOption {
         type = lib.types.deferredModule;
         default = { };
-        description = "The fleet module (fleet.md `mkFlake`).";
+        description = "The fleet module (README.md#entry-points `mkFlake`).";
       };
       config.flake = ren.mkFlake inputs config.fleet;
     };

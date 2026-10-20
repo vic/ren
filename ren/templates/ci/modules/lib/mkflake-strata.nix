@@ -1,6 +1,6 @@
 { ren, lib }:
 let
-  # mini fleet (fleet-ren.md strata row 3): `home` within a box forwards into `sys` and reads
+  # mini fleet (README.md#evaluation-order row 3): `home` within a box forwards into `sys` and reads
   # `outputs.systems` (sys's output: a cycle); `home` within a pad forwards nothing and may read it
   mini =
     { ren, ... }:

@@ -14,17 +14,17 @@ let
 in
 import ./class-lib.nix { inherit inputs; }
 // {
-  # fleet.md:441: ci builds with stable pkgs inside edge stage
+  # README.md#features: ci builds with stable pkgs inside edge stage
   test-guest-ci-stable-pkgs = {
     expr = toString stage.microvm.vms.ci.pkgs.path;
     expected = toString inputs.nixpkgs.outPath;
   };
-  # fleet.md:444: the standalone home uses edge HM (stable HM has another release)
+  # README.md#features: the standalone home uses edge HM (stable HM has another release)
   test-home-edge-hm = {
     expr = home.home.version.release;
     expected = release inputs.home-manager-unstable;
   };
-  # fleet.md:443: alice + bob HM under darwin
+  # README.md#features: alice + bob HM under darwin
   test-darwin-hm-users = {
     expr = builtins.attrNames o.darwinConfigurations.studio.config.home-manager.users;
     expected = [
@@ -32,7 +32,7 @@ import ./class-lib.nix { inherit inputs; }
       "bob"
     ];
   };
-  # fleet.md:455: aerospace on studio homes, not on linux homes
+  # README.md#features: aerospace on studio homes, not on linux homes
   test-aerospace-studio-not-lb = {
     expr = [
       o.darwinConfigurations.studio.config.home-manager.users.bob.programs.aerospace.enable
@@ -43,7 +43,7 @@ import ./class-lib.nix { inherit inputs; }
       false
     ];
   };
-  # fleet.md:450: every machine gets the edge helix (stable helix has another version)
+  # README.md#features: every machine gets the edge helix (stable helix has another version)
   test-overlays-helix-every-machine = {
     expr = lib.unique (
       map (n: helix o.nixosConfigurations.${n}.pkgs) [
@@ -59,7 +59,7 @@ import ./class-lib.nix { inherit inputs; }
     );
     expected = [ (helix inputs.nixpkgs-unstable.legacyPackages.x86_64-linux) ];
   };
-  # fleet.md:467: the nixos class feeds the colmena and age-manifest channels
+  # README.md#expected-results: the nixos class feeds the colmena and age-manifest channels
   test-channel-into-colmena-age = {
     expr = [
       (builtins.attrNames o.colmenaHive.nodes)
@@ -147,7 +147,7 @@ import ./class-lib.nix { inherit inputs; }
     expr = home.services.syncthing.enable;
     expected = true;
   };
-  # fleet.md:465,393: `is ren.aspects.desktop parent` on the path: tray on for stage users only
+  # README.md#expected-results, README.md#features: `is ren.aspects.desktop parent` on the path: tray on for stage users only
   test-tray-stage-alice = {
     expr = stage.home-manager.users.alice.services.syncthing.tray.enable;
     expected = true;
@@ -168,12 +168,12 @@ import ./class-lib.nix { inherit inputs; }
     expr = o.darwinConfigurations.studio.config.system.defaults.dock.autohide;
     expected = true;
   };
-  # C10: motd evaluates on darwin (fleet.md:443)
+  # README.md#features: motd evaluates on darwin (README.md#features)
   test-darwin-motd = {
     expr = o.darwinConfigurations.studio.config.environment.etc.motd.text;
     expected = "managed by ren";
   };
-  # C8: dev lands git as a package on every os (fleet.md:443)
+  # README.md#features: dev lands git as a package on every os (README.md#features)
   test-darwin-git-pkg = {
     expr = lib.any (
       p: (p.pname or "") == "git"

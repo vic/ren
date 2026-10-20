@@ -1,4 +1,4 @@
-# stratum 0 kind graph (fleet.md:85-87,424; C3): below/spawns/is over raw kind decls
+# stratum 0 kind graph (README.md#open, README.md#features; README.md#kinds): below/spawns/is over raw kind decls
 stimpy: {
   kindgraph =
     { ren, rawKinds }:
@@ -15,7 +15,7 @@ stimpy: {
         if lib.isFunction d then d (lib.mapAttrs (n: _: ren.kinds.${n}) (fnArgs K)) else d;
       below = K: map (k: k.__ren.kind) (body K).below or [ ];
       kindsOf = K: [ K ] ++ (if (body K) ? is then kindsOf (body K).is.__ren.kind else [ ]);
-      # fleet.md:424 gen-scope refuses a cyclic or self-naming `below`
+      # README.md#features gen-scope refuses a cyclic or self-naming `below`
       reach =
         seen: K:
         if elem K seen then
@@ -27,7 +27,7 @@ stimpy: {
         let
           bad = lib.subtractLists (below K) (attrNames (body K).spawns or { });
         in
-        bad == [ ] || throw "ren: kind ${K}: spawns ${toString bad} not in below"; # fleet.md:85
+        bad == [ ] || throw "ren: kind ${K}: spawns ${toString bad} not in below"; # README.md#open
       listed = concatMap below kindNames;
     in
     {
@@ -38,6 +38,6 @@ stimpy: {
         kindsOf
         ;
       ok = lib.all (K: reach [ ] K && spawnsOk K) kindNames;
-      roots = lib.filter (K: below K != [ ] && !elem K listed) kindNames; # C3
+      roots = lib.filter (K: below K != [ ] && !elem K listed) kindNames; # README.md#kinds
     };
 }
