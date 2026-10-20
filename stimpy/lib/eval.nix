@@ -30,6 +30,8 @@ stimpy: {
         is = pred.is ctx;
         inherit (stimpy) data;
         fold = stimpy.folds;
+        # #48: lazy RESULT, no `outputs` (guarded `into` arg); deciding kinds or `at` from it cycles
+        result = removeAttrs res [ "outputs" ];
       };
       scopesOf = map (i: st.scopes.${i});
       ctx = {
@@ -81,20 +83,17 @@ stimpy: {
           ;
         inherit (pl) pools;
       };
-      c0 = lib.all lib.id ren.__ren.checks;
-      c2 = c0 && lib.all lib.id content.checks && col.cycle; # a stratum-3 cycle is named before pools
-      c3 = c2 && lib.all lib.id col.checks;
-      after = ok: lib.mapAttrs (_: builtins.seq ok);
+      res = stimpy.result {
+        inherit
+          ren
+          st
+          act
+          content
+          pl
+          col
+          emissions
+          ;
+      };
     in
-    after c0 {
-      inherit (st) scopes;
-      inherit (act) active;
-    }
-    // after c2 {
-      inherit (content) landed;
-      inherit (pl) pools;
-      branches = lib.mapAttrs (_: lib.filterAttrs (_: i: i != null)) content.branches;
-      emitted = lib.mapAttrs (_: es: lib.unique (map (e: e.id) es)) emissions;
-    }
-    // after c3 { inherit (col) outputs forwarded; };
+    res;
 }

@@ -145,7 +145,9 @@ Reserved words (22). Ren uses a Gen term only where Gen means the same thing.
 - No flakes: a plain `import` with locked `inputs`.
 - flake-parts: `flakeModules.default`, option `fleet`.
 - Plain `lib.evalModules`: `lib.flakeModule`, option `fleet`. Ren also accepts Gen modules there.
-- Tests: `evalFleet inputs module` returns `scopes active landed pools emitted branches outputs forwarded` in both twins.
+- Tests: `evalFleet inputs module` returns `scopes active landed pools emitted branches outputs forwarded channels forwards` in both twins. `channels` is `name -> { emitters = [ id ]; receivers = emitter -> [ id ]; }`. `forwards` is `[ { class; from; to; } ]` (class forwards and channel `into` forwards).
+- Inside the fleet: `ren.lib.result` is the same RESULT without `outputs`. It is lazy and read-only. Read it in an `into` (stratum 3). Deciding kinds, activation or `at` from it is a cycle: a Nix eval error, never a wrong value.
+- Ren only: `ren.lib.inspect` is a gen-inspect inspector over the scope graph (edges `child`, `<class>`, `<channel>`): `.render.mermaid`, `.query`, `.select`, `.why`. The template never uses it (#51: mermaid handles keep `/`).
 
 ## fleet-walkthrough
 
@@ -234,6 +236,7 @@ T = [template tests](ren/templates/fleet/tests), E = [e2e tests](ren/templates/f
 
 | row | what appears | what must not appear | tests |
 |---|---|---|---|
+| fleet docs from the result (#48) | `docs.mermaid` lists every scope id and the forward edges, for example `guest:ci` -->|nixos| `host:stage` | a diagram built from predicates; a read of `ren.lib.result` that decides `at` evaluating | [T docs](ren/templates/fleet/tests/docs.nix) |
 | fold one | `deploy.nodes.lb.hostname = "10.0.1.1"` | two `deployment` emitters on one host | T [deployment-lb-address](ren/templates/fleet/tests/pools.nix#L9), [error-two-deployment-emitters](ren/templates/fleet/tests/errors.nix#L79), E [fold-one](ren/templates/fleet/tests-e2e/default.nix#L87) |
 | fold list order | lb's haproxy lists web-1, then web-2 | order from attribute or include order | T [backends-lb-exact](ren/templates/fleet/tests/pools.nix#L36), E [fold-list-order](ren/templates/fleet/tests-e2e/default.nix#L91) |
 | guest channel | ci (`stable`) built with stable pkgs inside stage (`edge`) | ci built with the pkgs of stage | T [guest-ci-channel-stable](ren/templates/fleet/tests/channels.nix#L8), E [guest-ci-stable-pkgs](ren/templates/fleet/tests-e2e/default.nix#L18) |
@@ -285,6 +288,7 @@ What `ren/lib` calls today (`grep -rho 'gen\.[a-z]*' ren/lib`). Stimpy calls no 
 
 | Ren construct | Gen part | status |
 |---|---|---|
+| `ren.lib.inspect` (Ren only) | gen-inspect `mkInspector` / `fromGraph` | direct |
 | scope tree, `below`/`spawns` | gen-scope `mkKinds`, `eval`; spawned ids are minted `bare@parent` | glue: kinds become depth levels ([sini/gen-scope#2](https://github.com/sini/gen-scope/issues/2)) |
 | `and anyOf not within has` | gen-select, same names | direct |
 | kind, instance, aspect refs; `is` | gen-select `when` | glue: gen-select `kind`/`subkind`/`entity` need gen-schema kinds |

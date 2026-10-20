@@ -89,6 +89,6 @@ ren: {
         emissions
         cycle
         ;
-      inherit landed collect;
+      inherit landed collect chan;
     };
 }

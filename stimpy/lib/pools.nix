@@ -22,5 +22,6 @@ stimpy: {
         c: es: lib.genAttrs (lib.unique (lib.concatMap (e: e.rs) es)) (poolAt c)
       ) tagged;
       poolsAt = id: lib.mapAttrs (c: _: poolAt c id) channels;
+      inherit recv;
     };
 }
