@@ -142,15 +142,39 @@ in
       "v1"
     ];
   };
+  # README.md#evaluation-order row 3: a forwarding branch reads `outputs` of a class it does not forward into (#60)
+  test-stratum3-forwarding-branch-reads-other = {
+    expr =
+      (go (ren: {
+        ren.classes.side = {
+          at = ren.kinds.world;
+          into = _: ms: { side = 1; };
+        };
+        ren.classes.rd = {
+          at = ren.kinds.person;
+          into = { outputs, ... }: ms: {
+            cfg = { };
+            seen = outputs.side;
+          };
+        };
+      }) (_: { })).outputs.seen;
+    expected = 1;
+  };
+  # rd forwards into cfg, so reading cfg's `out` is a cycle
   test-stratum3-cycle = {
     expr =
       (go (ren: {
         ren.classes.rd = {
           at = ren.kinds.person;
-          into = { outputs, ... }: ms: { cfg = { }; };
+          into = { outputs, ... }: ms: {
+            cfg = { };
+            seen = outputs.out;
+          };
         };
-      }) (_: { })).outputs;
-    expectedError = err;
+      }) (_: { })).outputs.seen;
+    expectedError = err // {
+      msg = "stratum 3";
+    };
   };
   test-branches = {
     expr = (go (_: { }) (_: { })).branches.cfg.${n1};

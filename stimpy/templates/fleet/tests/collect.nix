@@ -345,7 +345,7 @@ in
   # UNTESTABLE-T1: microvm.vms.ci.config / bob's ci home absent from stage home-manager.users - forces nixos module values
   # UNTESTABLE-T1: kernel channel from settings (lts/latest) - forces pkgs
   # UNTESTABLE-T1: syncthing tray via `is desktop parent` - forces homeManager module values
-  # UNTESTABLE-T1: per-branch stratum 3 reads outputs (README.md#expected-results: no Fleet branch reads outputs; lib tests use a synthetic vocabulary)
+  # per-branch stratum 3: a branch reads realized outputs (noGui reads lb, features/headless.nix); tested in e2e (test-check-no-gui-lb) and lib tests
   # UNTESTABLE-T1: lb haproxy config text "web-1, web-2" - forces a realized nixosSystem (pool order covered in pools.nix)
   # UNTESTABLE-T1: flake-file.inputs as a real option beside nixosConfigurations - flake-file module not in Tier 1
 }

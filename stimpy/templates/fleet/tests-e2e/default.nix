@@ -192,5 +192,5 @@ import ./class-lib.nix { inherit inputs; }
     expected = true;
   };
 }
-// import ./demos.nix { inherit o lib; }
+// import ./demos.nix { inherit o lib inputs; }
 // import ./diamond.nix { inherit o lib; }

@@ -12,7 +12,7 @@ stimpy: {
       inherit (stimpy) lib merge;
       inherit (lib) attrNames concatMap filter;
       inherit (ren) classes channels;
-      call = f: args: f (builtins.intersectAttrs (lib.functionArgs f) (args // { inherit outputs; }));
+      call = f: args: f (builtins.intersectAttrs (lib.functionArgs f) ({ inherit outputs; } // args));
       # one class `into` call per (class, scope matching a branch); keys static (A-F10), ms stays lazy
       cols = concatMap (
         k:
@@ -23,10 +23,12 @@ stimpy: {
             into = (lib.elemAt (lib.toList classes.${k}) i).into;
             ms = content.modules.${k}.${id} or [ ] ++ map (f: f.m) (fwdInto k id) ++ chan.fwdInto k id;
           in
-          lib.optional (i != null) {
-            inherit k id into;
-            r = call into (argsAt id) ms;
-          }
+          lib.optional (i != null) (
+            lib.fix (c: {
+              inherit k id into;
+              r = call into (argsAt id // { outputs = guard c; }) ms;
+            })
+          )
         ) st.order
       ) (attrNames classes);
       # README.md#platforms nearest ancestor-or-self where class j matches; t != s if j == k
@@ -72,18 +74,14 @@ stimpy: {
         ) cols
       ) channels;
       chan = stimpy.chanInto (args // { inherit call cols; });
-      outputs = merge.mergeStrict [ ] (
-        [ { } ] ++ map (c: removeAttrs c.r (fwdKeys c ++ attrNames channels)) cols ++ chan.outputs
-      );
+      outOf = c: removeAttrs c.r (fwdKeys c ++ attrNames channels);
+      outputs = merge.mergeStrict [ ] ([ { } ] ++ map outOf cols ++ chan.outputs);
+      guard = stimpy.outputsFor {
+        inherit cols fwdKeys outputs;
+        outKeys = c: attrNames (outOf c);
+      };
       # README.md#features
-      checks =
-        map (
-          c:
-          !(lib.functionArgs c.into ? outputs && fwdKeys c != [ ])
-          || throw "ren: stratum 3 cycle: ${c.k} at ${c.id} reads outputs and forwards"
-        ) cols
-        ++ map (f: builtins.seq f.t true) fwds
-        ++ [ chan.cycle ];
+      checks = map (f: builtins.seq f.t true) fwds ++ [ chan.cycle ];
     in
     {
       inherit
