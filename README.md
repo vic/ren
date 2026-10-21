@@ -2,7 +2,7 @@
 
 ![ren](ren-and-stimpy.gif)
 
-> Usage examples: [Fleet Template](ren/templates/fleet/modules) - [vic/vix](https://github.com/vic/vix/tree/ren) - [adda/nix-config (forked by vic)](https://codeberg.org/vic/adda-config)
+> Usage examples: [Fleet Template](ren/templates/fleet/modules) - [vic/vix](https://github.com/vic/vix/tree/ren) - [Ren ports by LLM](https://github.com/vic/ren-ports)
 
 Ren is a small surface language for aspect-oriented, context-driven Nix fleets.
 You declare your own domain (kinds and instances), and Ren puts each piece of configuration at the correct place in it.
